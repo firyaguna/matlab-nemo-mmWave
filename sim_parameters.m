@@ -8,7 +8,7 @@ apHeight = 8;
 % USER BODY PARAMETERS
 bodyAttenuation = db2pow( -20 );
 bodyWide = 0.3;
-distanceToBody = 0.15;
+distanceToBody = 0.3;
 distanceToTopHead = 0.4;
 
 % POWER

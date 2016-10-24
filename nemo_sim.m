@@ -76,36 +76,63 @@ for n_iter = 1:numberOfIterations
     uePosition = cellRadius * ( -1+2*rand(1) + -1i+2i*rand(1) );
     % Place UE in origin and shift cell positions
     apPosition = apPosition + uePosition;
+    % Get 2-D distance from AP to UE
+    distance2d = abs( apPosition );
     % Get 3-D distance from AP to UE
-    distance = sqrt( abs( apPosition ).^2 + apHeight^2 );
+    distance3d = sqrt( abs( apPosition ).^2 + apHeight^2 );
+    % Get angle of arrival from AP to UE
+    angles = angle( apPosition );
     
     % LINE-OF-SIGHT MODEL
-    LOS_id = find( distance <= cellRadius );
-    NLOS_id = find( distance > cellRadius );
+    % Every AP is LOS (no building or wall shadowing in indoor venue)
+    % Define which AP are covering the UE
+    inCell_id = find( distance2d <= cellRadius );
+    outCell_id = find( distance2d > cellRadius );
     
     % DOWNLINK RECEIVED POWER
-    rxPower = zeros( 1, numOfPoints );
-    rxPower( LOS_id ) = txPower .* PL_LOS( distance( LOS_id ) );
-    rxPower( NLOS_id ) = txPower .* PL_LOS( distance( NLOS_id ) );
+    rxPower = txPower .* PL_LOS( distance3d );
+%     rxPower = zeros( 1, numOfPoints );
+%     rxPower( LOS_id ) = txPower .* PL_LOS( distance( LOS_id ) );
+%     rxPower( NLOS_id ) = txPower .* PL_LOS( distance( NLOS_id ) );
     
     % CELL ASSOCIATION
     % Get the highest omnidirectional rx power
     [ max_rxPower, servingAP_id ] = max( rxPower );
     
     % SELF-BODY BLOCKAGE
-    bodyBlock_id = find( distance >= bodyBlockDistance );
-    for p = bodyBlock_id
-        isBlocked = binornd( 1, prob_selfBodyBlockage );
-        if isBlocked
-            rxPower( p ) = rxPower( p ) * bodyAttenuation;
-        end
+    % Define body orientation
+    bodyCenter_angle = -pi + 2*pi * rand(1); % angle of the body center
+    angle0 = bodyCenter_angle - bodyBlock_angle /2;
+    angle1 = bodyCenter_angle + bodyBlock_angle /2;
+    rangeFlag = 0;
+    if angle0 < -pi
+        angle0 = angle0 + 2*pi;
+        rangeFlag = 1;
+    end
+    if angle1 > pi
+        angle1 = angle1 - 2*pi;
+        rangeFlag = 1;
     end
     
+    % Define which APs are blocked
+    if rangeFlag
+        angleSet = ( angles <= angle1 ) | ( angles > angle0 );
+    else
+        angleSet = ( angles <= angle1 ) & ( angles > angle0 );
+    end
+    bodyBlock_id = find( ...
+        ( distance2d >= bodyBlockDistance ) ... % the ones in the critical area
+        & angleSet ); % the ones whose signal arrives from the blocked angle interval
+%     plot_nemo_topology;
+
+    % Apply body attenuation
+    rxPower( bodyBlock_id ) = rxPower( bodyBlock_id ) * bodyAttenuation;
+        
     % DIRECTIVITY GAIN
-    % Apply minimum directivity gain to NLOS APs
-    rxPower( NLOS_id ) = rxPower( NLOS_id ) * dirGain(3);
-    % Apply intermediate directivity gain to LOS APs
-    rxPower( LOS_id ) = rxPower( LOS_id ) * dirGain(2);
+    % Apply minimum directivity gain to non-neighbor APs
+    rxPower( outCell_id ) = rxPower( outCell_id ) * dirGain(3);
+    % Apply intermediate directivity gain to neighbor APs
+    rxPower( inCell_id ) = rxPower( inCell_id ) * dirGain(2);
     % Apply maximum directivity gain to associated AP
     % Assume associated AP signal does not suffer body attenuation
     rxPower( servingAP_id ) = max_rxPower * dirGain(1);
