@@ -19,16 +19,29 @@ sim_parameters;
 
 %% INITIALIZE VECTORS
 sinr_vector = zeros( 1, numberOfIterations );
-spectralEff = zeros( 1, numberOfIterations );
+spectralEff_vector = zeros( 1, numberOfIterations );
 inr_vector = zeros( 1, numberOfIterations );
 
-coverage_sinr = zeros( 1, length( beamWidth_vector ) );
-avg_spectralEff = zeros( 1, length( beamWidth_vector ) );
-limitation_inr = zeros( 1, length( beamWidth_vector ) );
-apDensity = zeros( 1, length( beamWidth_vector ) );
+coverage_sinr = zeros( length( beamWidth_vector ), ...
+                       length( apHeight_vector ),...
+                       length( bodyAttenuation_vector ) );
+avg_spectralEff = zeros( length( beamWidth_vector ), ...
+                       length( apHeight_vector ),...
+                       length( bodyAttenuation_vector ) );
+limitation_inr = zeros( length( beamWidth_vector ), ...
+                       length( apHeight_vector ),...
+                       length( bodyAttenuation_vector ) );
+apDensity_matrix = zeros( length( beamWidth_vector ), ...
+                       length( apHeight_vector ) );
+cellRadius_matrix = zeros( length( beamWidth_vector ), ...
+                       length( apHeight_vector ) );
 
 %% SCENARIO
 
+% PLACE USER EQUIPMENT
+% Random UE position
+uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
+    
 % PATH LOSS MODEL
 switch( pathLossModel )
     case 'belfast'
@@ -51,7 +64,6 @@ dirGain = [ mainLobeGainRx * mainLobeGainTx ... serving AP gain
             ];
         
 % SELF-BODY BLOCKAGE
-bodyBlockDistance = apHeight * distanceToBody / distanceToTopHead;
 bodyBlock_angle = 2 * atan( bodyWide / distanceToBody );
 prob_selfBodyBlockage = bodyBlock_angle / (2*pi);
 
@@ -59,30 +71,45 @@ prob_selfBodyBlockage = bodyBlock_angle / (2*pi);
 tic
 currentProgress = 0;
 
+for ba_id = 1:length( bodyAttenuation_vector )
+    
+    bodyAttenuation = bodyAttenuation_vector( ba_id );
+
+for h_id = 1:length( apHeight_vector )
+    
+    apHeight = apHeight_vector( h_id );
+    
+    % SELF-BODY BLOCKAGE
+    % Define the minimum critical distance where signal may start to be
+    % blocked by the top of user's head
+    bodyBlockDistance = apHeight * distanceToBody / distanceToTopHead;
+    
 for bw_id = 1:length( beamWidth_vector )
         
     % CELL PROPERTIES
     beamWidth = beamWidth_vector( bw_id );
     cellRadius = apHeight * tan( beamWidth/2 );
+    cellRadius_matrix( bw_id, h_id ) = cellRadius;
     
     % GENERATE TOPOLOGY
     [ apPosition, numOfPoints ] = HexagonCellGrid( areaSide, cellRadius );
-    apDensity( bw_id ) = numOfPoints;
-    
-for n_iter = 1:numberOfIterations
+    apDensity_matrix( bw_id, h_id ) = numOfPoints;
      
     % PLACE USER EQUIPMENT
     % Random UE position within the cell
-    uePosition = cellRadius * ( -1+2*rand(1) + -1i+2i*rand(1) );
+    % Position does not change among the iterations
+    uePosition_temp = cellRadius * uePosition;
     % Place UE in origin and shift cell positions
-    apPosition = apPosition + uePosition;
+    apPosition = apPosition + uePosition_temp;
     % Get 2-D distance from AP to UE
     distance2d = abs( apPosition );
     % Get 3-D distance from AP to UE
-    distance3d = sqrt( abs( apPosition ).^2 + apHeight^2 );
+    distance3d = sqrt( distance2d.^2 + apHeight^2 );
     % Get angle of arrival from AP to UE
     angles = angle( apPosition );
     
+for n_iter = 1:numberOfIterations
+
     % LINE-OF-SIGHT MODEL
     % Every AP is LOS (no building or wall shadowing in indoor venue)
     % Define which AP are covering the UE
@@ -91,9 +118,6 @@ for n_iter = 1:numberOfIterations
     
     % DOWNLINK RECEIVED POWER
     rxPower = txPower .* PL_LOS( distance3d );
-%     rxPower = zeros( 1, numOfPoints );
-%     rxPower( LOS_id ) = txPower .* PL_LOS( distance( LOS_id ) );
-%     rxPower( NLOS_id ) = txPower .* PL_LOS( distance( NLOS_id ) );
     
     % CELL ASSOCIATION
     % Get the highest omnidirectional rx power
@@ -147,46 +171,59 @@ for n_iter = 1:numberOfIterations
     sinr_vector( n_iter ) = sinr;
     
     % SPECTRAL EFFICIENCY log2(1+SINR)
-    spectralEff( n_iter ) = log2( 1 + sinr );
+    spectralEff_vector( n_iter ) = log2( 1 + sinr );
     
     % INTERFERENCE-TO-NOISE RATIO
     inr_vector( n_iter ) = sum( interfPower ) / noisePower;
     
     % DISPLAY PROGRESS
-    totalProgress = length( beamWidth_vector ) * numberOfIterations;
+    totalProgress = length( beamWidth_vector ) * ...
+                    length( apHeight_vector ) * ...
+                    length( bodyAttenuation_vector ) * ...
+                    numberOfIterations;
     currentProgress = currentProgress + 1;
     loopProgress = 100 * currentProgress / totalProgress;
-    disp(['Loop progress: ' num2str(loopProgress)  '%']);
-    toc
+    if mod(loopProgress,5) == 0
+        disp(['Loop progress: ' num2str(loopProgress)  '%']);
+        toc
+    end
     
-end
+end % iterations end
 
     % AVERAGE SPECTRAL EFFICIENCY
-    avg_spectralEff( bw_id ) = mean( spectralEff );
+    avg_spectralEff( bw_id, h_id, ba_id ) = mean( spectralEff_vector );
     
     % COVERAGE RATE
     %   the rate that the received SINR is larger than some threshold
-    coverage_sinr( bw_id ) = sum( sinr_vector > sinrThreshold ) / ...
+    coverage_sinr( bw_id, h_id, ba_id ) = sum( sinr_vector > sinrThreshold ) / ...
         length( sinr_vector );
     
     % INTERFERENCE LIMITATION RATE
     %   the rate that the INR is larger than some threshold
-    limitation_inr( bw_id ) = sum( inr_vector > inrThreshold ) / ...
+    limitation_inr( bw_id, h_id, ba_id ) = sum( inr_vector > inrThreshold ) / ...
         length( inr_vector );
-    
-    
-end
+
+end % beamwidth end
+
+end % apHeight end
+
+end % bodyAttenuation end
 
 %% OUTPUTS
 outputName = 'nemo_sim_output_';
 outputName = strcat( outputName, pathLossModel, '.mat' );
 
 save( outputName,  ...
-    'apDensity', ...
+    'apDensity_matrix', ...
+    'cellRadius_matrix', ...
     'beamWidth_vector', ...
+    'apHeight_vector', ...
+    'bodyAttenuation_vector', ...
     'avg_spectralEff', ...
     'coverage_sinr', ...
     'limitation_inr', ...
     'inrThreshold', ...
     'sinrThreshold' );
 %% PLOTS
+
+plot_nemo_outputs;

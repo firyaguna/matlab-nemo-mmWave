@@ -2,19 +2,19 @@
 
 % TOPOLOGY
 areaSide = 100;
-numberOfIterations = 1000;
-apHeight = 8;
+numberOfIterations = 8000;
+apHeight_vector = 1:9;
 
 % USER BODY PARAMETERS
-bodyAttenuation = db2pow( -20 );
+bodyAttenuation_vector = db2pow( [-inf -40 -20 0] ); % infinite, some, and no attenuation
 bodyWide = 0.3;
 distanceToBody = 0.3;
 distanceToTopHead = 0.4;
 
 % POWER
 txPower = db2pow( 30 ); % 1 W
-sinrThreshold = db2pow( 30 );
-inrThreshold = db2pow( 10 );
+sinrThreshold = db2pow( 19 );
+inrThreshold = db2pow( -10 );
 bandWidth = 100;    % MHz
 frequency = 60;     % GHz
 noiseFig = 9;       % dB
@@ -23,7 +23,7 @@ noisePower = db2pow( -174 + noiseFig + 10*log10( bandWidth*1e6 ) );
 % DIRECTIVITY GAIN
 mainLobeGainTx = db2pow( 20 );	% main lobe gain
 sideLobeGainTx = db2pow( -20 );	% side lobe gain
-beamWidth_vector = deg2rad( [15 30 45 60 75 90] );
+beamWidth_vector = deg2rad( [30 90 150] );
 mainLobeGainRx = db2pow( 10 );  % main lobe gain
 sideLobeGainRx = db2pow( -10 ); % side lobe gain
 
