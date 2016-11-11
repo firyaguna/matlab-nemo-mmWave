@@ -6,22 +6,25 @@ function [ position, numCells ] = HexagonCellGrid( areaSide, cellRay )
 %   Author: Fadhil Firyaguna
 
 halfCells = ceil( areaSide / cellRay / 2);
-numCells = ( 2 * halfCells )^2;
+numCells = ( 2 * halfCells + 1 )^2;
 
 % Generate hexagonal grid
 Rad3Over2 = sqrt(3) / 2;
-[ X, Y ] = meshgrid( -halfCells : 1 : (halfCells-1) );
+[ X, Y ] = meshgrid( -halfCells : 1 : (halfCells) );
 n = size( X, 1 );
 X = Rad3Over2 * X;
-Y = Y + repmat( [0 0.5], [n,n/2] );
+if mod(n-1,4) == 0
+    Y = Y + [ repmat( [0 .5], [n,floor(n/2)] ), zeros(n,1) ];
+else
+    Y = Y + [ repmat( [.5 0], [n,floor(n/2)] ), .5*ones(n,1) ];
+end
 
 % Fit to cell ray
-X = cellRay * X;
-Y = cellRay * Y;
+X = 2 * cellRay * X;
+Y = 2 * cellRay * Y;
 
 % Reshape matrices to vector
 position = reshape( X, 1, [] ) + 1i*reshape( Y, 1, [] );
-
 
 end
 

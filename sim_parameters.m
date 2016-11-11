@@ -1,19 +1,29 @@
 % PARAMETERS FOR nemo_sim.m
 
 % TOPOLOGY
-areaSide = 100;
-numberOfIterations = 8000;
-apHeight_vector = 1:9;
+areaSide = 500;
+numberOfIterations = 1000;
+apHeight_vector = [1 3 5];
+
+% PLACE USER EQUIPMENT
+% Random UE position
+% uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
+% UE on cell center
+% uePosition = 0;
+% UE on 3 cells edges
+% uePosition = 1;
+% UE on 2 cells edges
+uePosition = .5 + 1i;
 
 % USER BODY PARAMETERS
-bodyAttenuation_vector = db2pow( [-inf -40 -20 0] ); % infinite, some, and no attenuation
+bodyAttenuation_vector = db2pow( [-inf -3 0] ); % infinite, some, and no attenuation
 bodyWide = 0.3;
 distanceToBody = 0.3;
 distanceToTopHead = 0.4;
 
 % POWER
-txPower = db2pow( 30 ); % 1 W
-sinrThreshold = db2pow( 19 );
+txPower = db2pow( 10 );
+sinrThreshold = db2pow( 0 );
 inrThreshold = db2pow( -10 );
 bandWidth = 100;    % MHz
 frequency = 60;     % GHz
@@ -21,9 +31,9 @@ noiseFig = 9;       % dB
 noisePower = db2pow( -174 + noiseFig + 10*log10( bandWidth*1e6 ) );
 
 % DIRECTIVITY GAIN
+beamWidth_vector = deg2rad( [30 90 120 150] );
 mainLobeGainTx = db2pow( 20 );	% main lobe gain
-sideLobeGainTx = db2pow( -20 );	% side lobe gain
-beamWidth_vector = deg2rad( [30 90 150] );
+sideLobeGainTx = db2pow( -10 );	% side lobe gain
 mainLobeGainRx = db2pow( 10 );  % main lobe gain
 sideLobeGainRx = db2pow( -10 ); % side lobe gain
 
