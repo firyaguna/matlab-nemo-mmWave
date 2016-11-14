@@ -2,6 +2,7 @@
 
 % TOPOLOGY
 areaSide = 500;
+apDensity = 300/(1000*1000); % 100 AP/km2
 numberOfIterations = 1000;
 apHeight_vector = [1 3 5];
 
@@ -32,10 +33,11 @@ noisePower = db2pow( -174 + noiseFig + 10*log10( bandWidth*1e6 ) );
 
 % DIRECTIVITY GAIN
 beamWidth_vector = deg2rad( [30 90 120 150] );
-mainLobeGainTx = db2pow( 20 );	% main lobe gain
-sideLobeGainTx = db2pow( -10 );	% side lobe gain
-mainLobeGainRx = db2pow( 10 );  % main lobe gain
-sideLobeGainRx = db2pow( -10 ); % side lobe gain
+sideLobeGainTx = db2pow( -10 );
+sideLobeGainRx = db2pow( -10 );
+MainLobeGain = @(beamWidth,sideLobe) (2-sideLobe.*(1+cos(beamWidth./2))) ... 
+                                        ./(1-cos(beamWidth./2));
+mainLobeGainRx = MainLobeGain( deg2rad(90), sideLobeGainRx );
 
 % PATH LOSS
 pathLossModel = 'generic';  

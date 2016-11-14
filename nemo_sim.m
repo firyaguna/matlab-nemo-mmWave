@@ -31,12 +31,21 @@ avg_spectralEff = zeros( length( beamWidth_vector ), ...
 limitation_inr = zeros( length( beamWidth_vector ), ...
                        length( apHeight_vector ),...
                        length( bodyAttenuation_vector ) );
-apDensity_matrix = zeros( length( beamWidth_vector ), ...
-                       length( apHeight_vector ) );
-cellRadius_matrix = zeros( length( beamWidth_vector ), ...
-                       length( apHeight_vector ) );
 
 %% SCENARIO
+
+% GENERATE TOPOLOGY
+[ apPosition, cellRadius ] = HexagonCellGrid( areaSide, apDensity );
+
+% PLACE USER EQUIPMENT
+% Place UE in origin and shift cell positions
+apPosition = apPosition + uePosition;
+% Get 2-D distance from AP to UE
+distance2d = abs( apPosition );
+% Get 3-D distance from AP to UE
+distance3d = sqrt( distance2d.^2 + apHeight^2 );
+% Get angle of arrival from AP to UE
+angles = angle( apPosition );
     
 % PATH LOSS MODEL
 switch( pathLossModel )
@@ -52,12 +61,6 @@ switch( pathLossModel )
     PL_LOS = @(d) (4*pi*frequency*1e9/3e8)^2 .* d .^ ( - n_L );
     PL_NLOS = @(d) (4*pi*frequency*1e9/3e8)^2 .* d .^ ( - n_NL );
 end
-
-% DIRECTIVITY GAIN
-dirGain = [ mainLobeGainRx * mainLobeGainTx ... serving AP gain
-            sideLobeGainRx * mainLobeGainTx ... neighbor AP gain
-            sideLobeGainRx * sideLobeGainTx ... other AP gain
-            ];
         
 % SELF-BODY BLOCKAGE
 bodyBlock_angle = 2 * atan( bodyWide / distanceToBody );
@@ -84,33 +87,24 @@ for h_id = 1:length( apHeight_vector )
 
             % CELL PROPERTIES
             beamWidth = beamWidth_vector( bw_id );
-            cellRadius = apHeight * tan( beamWidth/2 );
-            cellRadius_matrix( bw_id, h_id ) = cellRadius;
+            mainLobeGainTx = MainLobeGain( beamWidth, sideLobeGainTx );
+            mainLobeEdge = apHeight * tan( beamWidth / 2 );
+            
+            % DIRECTIVITY GAIN
+            dirGain = [ mainLobeGainRx * mainLobeGainTx ... serving AP gain
+                        sideLobeGainRx * mainLobeGainTx ... neighbor AP gain
+                        sideLobeGainRx * sideLobeGainTx ... other AP gain
+                        ];
 
-            % GENERATE TOPOLOGY
-            [ apPosition, numOfPoints ] = HexagonCellGrid( areaSide, cellRadius );
-            apDensity_matrix( bw_id, h_id ) = numOfPoints;
 
-            % PLACE USER EQUIPMENT
-            % Random UE position within the cell
-            % Position does not change among the iterations
-            uePosition_temp = cellRadius * uePosition;
-            % Place UE in origin and shift cell positions
-            apPosition = apPosition + uePosition_temp;
-            % Get 2-D distance from AP to UE
-            distance2d = abs( apPosition );
-            % Get 3-D distance from AP to UE
-            distance3d = sqrt( distance2d.^2 + apHeight^2 );
-            % Get angle of arrival from AP to UE
-            angles = angle( apPosition );
 
             for n_iter = 1:numberOfIterations
 
                 % LINE-OF-SIGHT MODEL
                 % Every AP is LOS (no building or wall shadowing in indoor venue)
                 % Define which AP are covering the UE
-                inCell_id = find( distance2d <= cellRadius );
-                outCell_id = find( distance2d > cellRadius );
+                inCell_id = find( distance2d <= mainLobeEdge );
+                outCell_id = find( distance2d > mainLobeEdge );
 
                 % DOWNLINK RECEIVED POWER
                 rxPower = txPower .* PL_LOS( distance3d );
@@ -156,6 +150,12 @@ for h_id = 1:length( apHeight_vector )
                 % Apply maximum directivity gain to associated AP
                 % Assume associated AP signal does not suffer body attenuation
                 rxPower( servingAP_id ) = max_rxPower * dirGain(1);
+                % Gain variation inside main lobe gain
+                for id = inCell_id
+                    rxPower( id ) = rxPower( id ) * ...
+                        ( 1 - distance2d( id )/(2*mainLobeEdge) ); % 3 dB drop in main lobe edge
+                end
+                
 
                 % INTERFERENCE
                 interfPower = rxPower;
@@ -210,8 +210,6 @@ outputName = 'nemo_sim_output_';
 outputName = strcat( outputName, pathLossModel, '.mat' );
 
 save( outputName,  ...
-    'apDensity_matrix', ...
-    'cellRadius_matrix', ...
     'avg_spectralEff', ...
     'outage_sinr', ...
     'limitation_inr' );

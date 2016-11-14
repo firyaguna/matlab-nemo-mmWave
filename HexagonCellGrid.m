@@ -1,12 +1,12 @@
-function [ position, numCells ] = HexagonCellGrid( areaSide, cellRay )
+function [ position, cellRadius ] = HexagonCellGrid( areaSide, density )
 %HEXAGONCELLGRID Generates cell position coordinates around UE
 %   (c) CONNECT Centre, 2016
 %   Trinity College Dublin
 %
 %   Author: Fadhil Firyaguna
 
-halfCells = ceil( areaSide / cellRay / 2);
-numCells = ( 2 * halfCells + 1 )^2;
+halfCells = ceil( ( areaSide * sqrt( density ) - 1 )/2 );
+hexagonSide = areaSide / ( areaSide * sqrt( density ) - 1 );
 
 % Generate hexagonal grid
 Rad3Over2 = sqrt(3) / 2;
@@ -20,11 +20,12 @@ else
 end
 
 % Fit to cell ray
-X = 2 * cellRay * X;
-Y = 2 * cellRay * Y;
+X = 2 * hexagonSide * X;
+Y = 2 * hexagonSide * Y;
 
 % Reshape matrices to vector
 position = reshape( X, 1, [] ) + 1i*reshape( Y, 1, [] );
+cellRadius = hexagonSide * 2 * tan(deg2rad(30));
 
 end
 
