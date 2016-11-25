@@ -1,43 +1,40 @@
 % PARAMETERS FOR nemo_sim.m
 
+debug = 1;
+
 % TOPOLOGY
-areaSide = 500;
-apDensity = 300/(1000*1000); % 100 AP/km2
-numberOfIterations = 1000;
-apHeight_vector = [1 3 5];
+areaSide = 100;
+apDensity = 100/(100*100); % AP/hm2
+numberOfIterations = 500;
+apHeight_vector = 2; % height above UE plane
 
 % PLACE USER EQUIPMENT
-% Random UE position
-% uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
-% UE on cell center
-% uePosition = 0;
-% UE on 3 cells edges
-% uePosition = 1;
-% UE on 2 cells edges
-uePosition = .5 + 1i;
+uePosition_vector_0 = [ 0, ...        % circle
+                      .1, ...       % elipse
+                      .2, .4, .99 ];  % hiperbola
+uePosition_vector = [ uePosition_vector_0 uePosition_vector_0(2:end).*exp(1i*deg2rad(30)) ];
 
 % USER BODY PARAMETERS
-bodyAttenuation_vector = db2pow( [-inf -3 0] ); % infinite, some, and no attenuation
+bodyAttenuation_vector = db2pow( [-40 0] ); % infinite, some, and no attenuation
 bodyWide = 0.3;
 distanceToBody = 0.3;
 distanceToTopHead = 0.4;
 
 % POWER
-txPower = db2pow( 10 );
-sinrThreshold = db2pow( 0 );
-inrThreshold = db2pow( -10 );
+txPower = db2pow( 0 ); %dBm to power
 bandWidth = 100;    % MHz
 frequency = 60;     % GHz
 noiseFig = 9;       % dB
 noisePower = db2pow( -174 + noiseFig + 10*log10( bandWidth*1e6 ) );
 
 % DIRECTIVITY GAIN
-beamWidth_vector = deg2rad( [30 90 120 150] );
+beamWidth_vector = deg2rad( [30 60 90 120 135 150 165] );
+beamWidthRx = deg2rad( 30 );
 sideLobeGainTx = db2pow( -10 );
 sideLobeGainRx = db2pow( -10 );
 MainLobeGain = @(beamWidth,sideLobe) (2-sideLobe.*(1+cos(beamWidth./2))) ... 
                                         ./(1-cos(beamWidth./2));
-mainLobeGainRx = MainLobeGain( deg2rad(90), sideLobeGainRx );
+mainLobeGainRx = MainLobeGain( beamWidthRx, sideLobeGainRx );
 
 % PATH LOSS
 pathLossModel = 'generic';  

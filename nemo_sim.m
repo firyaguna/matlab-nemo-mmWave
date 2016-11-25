@@ -21,31 +21,23 @@ sim_parameters;
 sinr_vector = zeros( 1, numberOfIterations );
 spectralEff_vector = zeros( 1, numberOfIterations );
 inr_vector = zeros( 1, numberOfIterations );
+selfBodyBlock = zeros( 1, numberOfIterations );
 
-outage_sinr = zeros( length( beamWidth_vector ), ...
+halfPercentile_sinr = zeros( length( beamWidth_vector ), ...
                        length( apHeight_vector ),...
                        length( bodyAttenuation_vector ) );
 avg_spectralEff = zeros( length( beamWidth_vector ), ...
                        length( apHeight_vector ),...
                        length( bodyAttenuation_vector ) );
-limitation_inr = zeros( length( beamWidth_vector ), ...
-                       length( apHeight_vector ),...
-                       length( bodyAttenuation_vector ) );
+lobeEdge_matrix = zeros( length( beamWidth_vector ), ...
+                       length( apHeight_vector ) );
+rate_selfBodyBlock = zeros( length( beamWidth_vector ), ...
+                       length( apHeight_vector ) );
 
 %% SCENARIO
 
 % GENERATE TOPOLOGY
 [ apPosition, cellRadius ] = HexagonCellGrid( areaSide, apDensity );
-
-% PLACE USER EQUIPMENT
-% Place UE in origin and shift cell positions
-apPosition = apPosition + uePosition;
-% Get 2-D distance from AP to UE
-distance2d = abs( apPosition );
-% Get 3-D distance from AP to UE
-distance3d = sqrt( distance2d.^2 + apHeight^2 );
-% Get angle of arrival from AP to UE
-angles = angle( apPosition );
     
 % PATH LOSS MODEL
 switch( pathLossModel )
@@ -70,15 +62,24 @@ prob_selfBodyBlockage = bodyBlock_angle / (2*pi);
 tic
 currentProgress = 0;
 
-for h_id = 1:length( apHeight_vector )
+for h_id = 1:length( uePosition_vector )
 
-        apHeight = apHeight_vector( h_id );
+    apHeight = apHeight_vector( 1 );
 
-        % SELF-BODY BLOCKAGE
-        % Define the minimum critical distance where signal may start to be
-        % blocked by the top of user's head
-        bodyBlockDistance = apHeight * distanceToBody / distanceToTopHead;
+    % SELF-BODY BLOCKAGE
+    % Define the minimum critical distance where signal may start to be
+    % blocked by the top of user's head
+    bodyBlockDistance = apHeight * distanceToBody / distanceToTopHead;
 
+    % PLACE USER EQUIPMENT
+    uePosition = uePosition_vector( h_id );
+    % Place UE in origin and shift cell positions
+    apPosition_temp = apPosition + uePosition * cellRadius;
+    % Get 2-D distance from AP to UE
+    distance2d = abs( apPosition_temp );
+    % Get angle of arrival from AP to UE
+    angles = angle( apPosition_temp );
+            
     for ba_id = 1:length( bodyAttenuation_vector )
     
         bodyAttenuation = bodyAttenuation_vector( ba_id );
@@ -86,25 +87,24 @@ for h_id = 1:length( apHeight_vector )
         for bw_id = 1:length( beamWidth_vector )
 
             % CELL PROPERTIES
-            beamWidth = beamWidth_vector( bw_id );
-            mainLobeGainTx = MainLobeGain( beamWidth, sideLobeGainTx );
-            mainLobeEdge = apHeight * tan( beamWidth / 2 );
+            beamWidthTx = beamWidth_vector( bw_id );
+            mainLobeGainTx = MainLobeGain( beamWidthTx, sideLobeGainTx );
+            mainLobeEdgeTx = apHeight * tan( beamWidthTx / 2 );
+            lobeEdge_matrix( bw_id, h_id ) = mainLobeEdgeTx;
             
-            % DIRECTIVITY GAIN
-            dirGain = [ mainLobeGainRx * mainLobeGainTx ... serving AP gain
-                        sideLobeGainRx * mainLobeGainTx ... neighbor AP gain
-                        sideLobeGainRx * sideLobeGainTx ... other AP gain
-                        ];
-
-
+            % Get 3-D distance from AP to UE
+            distance3d = sqrt( distance2d.^2 + apHeight^2 ); 
+            
+            % LINE-OF-SIGHT MODEL
+            % Every AP is LOS (no building or wall shadowing in indoor venue)
+            
+            % BEAM COVERAGE
+            % Define which AP are covering the UE
+            inCell_id = find( distance2d <= mainLobeEdgeTx );
+            outCell_id = find( distance2d > mainLobeEdgeTx );
 
             for n_iter = 1:numberOfIterations
 
-                % LINE-OF-SIGHT MODEL
-                % Every AP is LOS (no building or wall shadowing in indoor venue)
-                % Define which AP are covering the UE
-                inCell_id = find( distance2d <= mainLobeEdge );
-                outCell_id = find( distance2d > mainLobeEdge );
 
                 % DOWNLINK RECEIVED POWER
                 rxPower = txPower .* PL_LOS( distance3d );
@@ -137,25 +137,76 @@ for h_id = 1:length( apHeight_vector )
                 bodyBlock_id = find( ...
                     ( distance2d >= bodyBlockDistance ) ... % the ones in the critical area
                     & angleSet ); % the ones whose signal arrives from the blocked angle interval
-%                 plot_nemo_topology;
+                
 
                 % Apply body attenuation
                 rxPower( bodyBlock_id ) = rxPower( bodyBlock_id ) * bodyAttenuation;
 
                 % DIRECTIVITY GAIN
-                % Apply minimum directivity gain to non-neighbor APs
-                rxPower( outCell_id ) = rxPower( outCell_id ) * dirGain(3);
-                % Apply intermediate directivity gain to neighbor APs
-                rxPower( inCell_id ) = rxPower( inCell_id ) * dirGain(2);
-                % Apply maximum directivity gain to associated AP
-                % Assume associated AP signal does not suffer body attenuation
-                rxPower( servingAP_id ) = max_rxPower * dirGain(1);
-                % Gain variation inside main lobe gain
-                for id = inCell_id
-                    rxPower( id ) = rxPower( id ) * ...
-                        ( 1 - distance2d( id )/(2*mainLobeEdge) ); % 3 dB drop in main lobe edge
+                % Define which APs are covered by the UE
+                % Get 2-d distance from APs to serving AP
+                distance2ap = abs( apPosition_temp - apPosition_temp(servingAP_id) );
+                % Get angle from APs to serving AP
+                angles2ap = angle( apPosition_temp - apPosition_temp(servingAP_id) );
+                % Get angle from serving AP to UE
+                angle2ap = angle(apPosition_temp(servingAP_id));
+                % Rotate the topology according to UE angle
+                Z = abs(apPosition_temp) .* exp( 1i*(angle(apPosition_temp)-angle2ap));
+                apPosition_temp = Z;
+                % Define conic elements
+                a_alpha = atan( apHeight / distance2d( servingAP_id ) );
+                semiLatusRectum = distance3d( servingAP_id ) * tan( beamWidthRx / 2 ); % mainLobeEdgeRx
+                if (a_alpha > beamWidthRx/2) && ...
+                   (a_alpha - beamWidthRx/2) > 1e-15 
+                % the illuminated area is a elipse
+                % when the ceiling plane cuts through all the beam cone
+                    a_beta = pi - beamWidthRx/2 - a_alpha;
+                    a_gama = pi - beamWidthRx - a_beta;
+                    semiMajorAxis = .5 * distance3d( servingAP_id ) * ...
+                        ( sin( beamWidthRx ) * sin( a_alpha ) )/...
+                        ( sin( a_gama ) * sin( a_beta ) );
+                    semiMinorAxis_sq = semiLatusRectum * semiMajorAxis;
+                    focus = sqrt( semiMajorAxis^2 - semiMinorAxis_sq );
+                    eccentricity = focus / semiMajorAxis;
+                    % Define the elipse range function
+                    ElipseRadius = @( t ) ( semiMajorAxis * ( 1 - eccentricity^2 ) ) ./...
+                        ( 1 - eccentricity .* cos(t) );
+                    % Compute distance from the elipse border to the serving AP
+                    % and compare to the distance from the APs
+                    inUeBeam_id = find( distance2ap <= ElipseRadius( angles2ap ) );
+                    outUeBeam_id = find( distance2ap > ElipseRadius( angles2ap ) );
+
+                else
+                % the illuminated area is a hyperbola
+                % when the ceiling plane and the UE height plane cut the beam
+                % cone
+                    eccentricity = sec( beamWidthRx/2 );
+                    semiMajorAxis = distance2d( servingAP_id ) / eccentricity;
+                    trueAnomalyLimit = acos( -1 / eccentricity );
+                    % Define the hiperbola range function
+                    HiperbolaRadius = @(t) -( semiMajorAxis * ( eccentricity^2 - 1 ) ) ./...
+                        ( 1 + eccentricity .* cos(t) );
+                    % Define the angles outside the hiperbolic
+                    % true anomaly limits
+                    outTrueLimit_id = [ find( angles2ap <= -trueAnomalyLimit ), ...
+                                        find( angles2ap >= trueAnomalyLimit ) ];
+                    hiperbolaRadius = HiperbolaRadius( angles2ap );
+                    hiperbolaRadius( outTrueLimit_id ) = +inf;
+                    % Compute distance from the hiperbola border to the serving AP
+                    % and compare to the distance from the APs
+                    inUeBeam_id = find( distance2ap <= hiperbolaRadius );
+                    outUeBeam_id = find( distance2ap > hiperbolaRadius );
                 end
                 
+                % Define gains according to spotlight coverage
+                % UE outside AP spotlight
+                rxPower( outCell_id ) = rxPower( outCell_id ) * sideLobeGainTx;
+                % UE inside AP spotlight
+                rxPower( inCell_id ) = rxPower( inCell_id ) * mainLobeGainTx;
+                % AP inside UE beam
+                rxPower( inUeBeam_id ) = rxPower( inUeBeam_id ) * mainLobeGainRx;
+                % AP outside UE beam
+                rxPower( outUeBeam_id ) = rxPower( outUeBeam_id ) * sideLobeGainRx;
 
                 % INTERFERENCE
                 interfPower = rxPower;
@@ -168,13 +219,14 @@ for h_id = 1:length( apHeight_vector )
 
                 % SPECTRAL EFFICIENCY log2(1+SINR)
                 spectralEff_vector( n_iter ) = log2( 1 + sinr );
-
-                % INTERFERENCE-TO-NOISE RATIO
-%                 inr_vector( n_iter ) = sum( interfPower ) / noisePower;
+                
+                % SELF-BODY BLOCK RATE
+                selfBodyBlock( n_iter ) = ~isempty( ...
+                    find( bodyBlock_id == servingAP_id, 1 ) );
 
                 % DISPLAY PROGRESS
                 totalProgress = length( beamWidth_vector ) * ...
-                                length( apHeight_vector ) * ...
+                                length( uePosition_vector ) * ...
                                 length( bodyAttenuation_vector ) * ...
                                 numberOfIterations;
                 currentProgress = currentProgress + 1;
@@ -189,20 +241,17 @@ for h_id = 1:length( apHeight_vector )
             % AVERAGE SPECTRAL EFFICIENCY
             avg_spectralEff( bw_id, h_id, ba_id ) = mean( spectralEff_vector );
 
-            % OUTAGE RATE
-            %   the rate that the received SINR is smaller than some threshold
-            outage_sinr( bw_id, h_id, ba_id ) = sum( sinr_vector <= sinrThreshold ) / ...
-                length( sinr_vector );
+            % 5th PERCENTILE OF SINR
+            %   the greatest SINR value of the lowest 5%
+            halfPercentile_sinr( bw_id, h_id, ba_id ) = pow2db( prctile( sinr_vector, 50 ) );
 
-            % INTERFERENCE LIMITATION RATE
-            %   the rate that the INR is larger than some threshold
-%             limitation_inr( bw_id, h_id, ba_id ) = sum( inr_vector > inrThreshold ) / ...
-%                 length( inr_vector );
-
+            % SELF-BODY BLOCK RATE
+            rate_selfBodyBlock( bw_id, h_id, ba_id ) = mean( selfBodyBlock );
+            
         end % beamwidth end
-        
+                            
     end % bodyAttenuation end
-
+                
 end % apHeight end
 
 %% OUTPUTS
@@ -211,8 +260,9 @@ outputName = strcat( outputName, pathLossModel, '.mat' );
 
 save( outputName,  ...
     'avg_spectralEff', ...
-    'outage_sinr', ...
-    'limitation_inr' );
+    'halfPercentile_sinr', ...
+    'lobeEdge_matrix' );
 %% PLOTS
 
 plot_nemo_output;
+% plot_nemo_topology;
