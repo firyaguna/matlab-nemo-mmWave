@@ -1,35 +1,29 @@
 % PARAMETERS FOR nemo_sim.m
 
-debug = 1;
-
 % TOPOLOGY
 areaSide = 100;
-apDensity = 100/(100*100); % AP/hm2
-numberOfIterations = 500;
-apHeight_vector = 2; % height above UE plane
-
-% PLACE USER EQUIPMENT
-uePosition_vector_0 = [ 0, ...        % circle
-                      .1, ...       % elipse
-                      .2, .4, .99 ];  % hiperbola
-uePosition_vector = [ uePosition_vector_0 uePosition_vector_0(2:end).*exp(1i*deg2rad(30)) ];
+apDensity_vector = [10:10:100 150:50:250 300:100:2000 3000:1000:9000]./(100^2); % AP/hm2
+numberOfIterations = 15000;
+apHeight_vector = 3; % height above UE plane
+blockageDensity_vector = 1 - 1; %[100 200 500 1000] - 1 ;
 
 % USER BODY PARAMETERS
-bodyAttenuation_vector = db2pow( [-40 0] ); % infinite, some, and no attenuation
+bodyAttenuation_vector = db2pow(-40); %db2pow( [-40 0] );
 bodyWide = 0.3;
-distanceToBody = 0.3;
+distanceToUserBody = 0.3;
 distanceToTopHead = 0.4;
 
 % POWER
-txPower = db2pow( 0 ); %dBm to power
+txPower = db2pow( 20 ); %dBm to power
 bandWidth = 100;    % MHz
 frequency = 60;     % GHz
 noiseFig = 9;       % dB
 noisePower = db2pow( -174 + noiseFig + 10*log10( bandWidth*1e6 ) );
+sinrThreshold_vector = db2pow( -20:5:20 );
 
 % DIRECTIVITY GAIN
-beamWidth_vector = deg2rad( [30 60 90 120 135 150 165] );
-beamWidthRx = deg2rad( 30 );
+beamWidth_vector = deg2rad( [30 60 90 120 150] );
+beamWidthRx = deg2rad( 360 );
 sideLobeGainTx = db2pow( -10 );
 sideLobeGainRx = db2pow( -10 );
 MainLobeGain = @(beamWidth,sideLobe) (2-sideLobe.*(1+cos(beamWidth./2))) ... 

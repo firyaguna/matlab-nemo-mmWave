@@ -1,4 +1,4 @@
-function [ position, cellRadius ] = HexagonCellGrid( areaSide, density )
+function [ position, numberOfAps, hexagonSide ] = HexagonCellGrid( areaSide, density )
 %HEXAGONCELLGRID Generates cell position coordinates around UE
 %   (c) CONNECT Centre, 2016
 %   Trinity College Dublin
@@ -19,13 +19,23 @@ else
     Y = Y + [ repmat( [.5 0], [n,floor(n/2)] ), .5*ones(n,1) ];
 end
 
+interSiteDistance = hexagonSide * sin( pi/3 ) / sin( pi/6);
+
 % Fit to cell ray
-X = 2 * hexagonSide * X;
-Y = 2 * hexagonSide * Y;
+X = .5 * interSiteDistance * X;
+Y = .5 * interSiteDistance * Y;
 
 % Reshape matrices to vector
 position = reshape( X, 1, [] ) + 1i*reshape( Y, 1, [] );
-cellRadius = hexagonSide * 2 * tan(deg2rad(30));
+
+% Delete positions outside the area
+xv = [ -areaSide/2, areaSide/2 ];
+yv = [ -areaSide/2 + interSiteDistance/2, areaSide/2 ];
+xq = real( position );
+yq = imag( position );
+in = inpolygon(xq,yq,xv,yv);
+position = position(in);
+numberOfAps = numel(in);
 
 end
 
