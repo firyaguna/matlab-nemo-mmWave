@@ -63,33 +63,33 @@ end
 tstart = tic;
 currentProgress = 0;
 
-for bl_id = 1:length( blockageDensity_vector )
+for ba_id = 1:length( bodyAttenuation_vector )
+
+    bodyAttenuation = bodyAttenuation_vector( ba_id );
+
+    for bl_id = 1:length( blockageDensity_vector )
     
-    numberOfHumanBlockages = blockageDensity_vector( bl_id );
-
-    for d_id = 1:length( apDensity_vector )
-
-        % GENERATE TOPOLOGY
-        apDensity = apDensity_vector( d_id );
-        [ apPosition, numberOfAps, cellRadius ] = ...
-            HexagonCellGrid( areaSide, apDensity );
-        halfInterSiteDistance( d_id ) = cellRadius;
+        numberOfHumanBlockages = blockageDensity_vector( bl_id );
 
         for h_id = 1:length( apHeight_vector )
 
             apHeight = apHeight_vector( h_id );
 
-            for ba_id = 1:length( bodyAttenuation_vector )
+            for bw_id = 1:length( beamWidth_vector )
 
-                bodyAttenuation = bodyAttenuation_vector( ba_id );
+                % CELL PROPERTIES
+                beamWidthTx = beamWidth_vector( bw_id );
+                mainLobeGainTx = MainLobeGain( beamWidthTx, sideLobeGainTx );
+                mainLobeEdgeTx = apHeight * tan( beamWidthTx / 2 );
+                lobeEdge_matrix( bw_id, h_id ) = mainLobeEdgeTx;
 
-                for bw_id = 1:length( beamWidth_vector )
+                for d_id = 1:length( apDensity_vector )
 
-                    % CELL PROPERTIES
-                    beamWidthTx = beamWidth_vector( bw_id );
-                    mainLobeGainTx = MainLobeGain( beamWidthTx, sideLobeGainTx );
-                    mainLobeEdgeTx = apHeight * tan( beamWidthTx / 2 );
-                    lobeEdge_matrix( bw_id, h_id ) = mainLobeEdgeTx;
+                    % GENERATE TOPOLOGY
+                    apDensity = apDensity_vector( d_id );
+                    [ apPosition, numberOfAps, cellRadius ] = ...
+                        HexagonCellGrid( areaSide, apDensity );
+                    halfInterSiteDistance( d_id ) = cellRadius;
 
                     for n_iter = 1:numberOfIterations
 
@@ -222,27 +222,27 @@ for bl_id = 1:length( blockageDensity_vector )
 %                     end
 
                     % AVERAGE SPECTRAL EFFICIENCY
-                    avg_spectralEff( bw_id, d_id, h_id, bl_id, ba_id ) = ...
+                    avg_spectralEff( d_id, bw_id, h_id, bl_id, ba_id ) = ...
                         mean( spectralEff_vector );
 
                     % 5th PERCENTILE OF SINR
                     %   the greatest SINR value of the lowest 50%
-                    percentile_sinr( 1, bw_id, d_id, h_id, bl_id, ba_id ) = ...
+                    percentile_sinr( 1, d_id, bw_id, h_id, bl_id, ba_id ) = ...
                         pow2db( prctile( sinr_vector, 5 ) );
-                    percentile_sinr( 2, bw_id, d_id, h_id, bl_id, ba_id ) = ...
+                    percentile_sinr( 2, d_id, bw_id, h_id, bl_id, ba_id ) = ...
                         pow2db( prctile( sinr_vector, 50 ) );
-                    percentile_sinr( 3, bw_id, d_id, h_id, bl_id, ba_id ) = ...
+                    percentile_sinr( 3, d_id, bw_id, h_id, bl_id, ba_id ) = ...
                         pow2db( prctile( sinr_vector, 95 ) );
 
-                end % beamwidth end
+                end % apDensity end
 
-            end % bodyAttenuation end
+            end % beamwidth end
 
         end % apHeight end
 
-    end % apDensity end
+    end % blockageDensity end
 
-end % blockageDensity
+end % bodyAttenuation end
 
 toc(tstart);
 
