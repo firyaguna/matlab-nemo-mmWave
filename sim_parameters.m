@@ -4,7 +4,7 @@
 areaSide = 100;
 apDensity_vector = [10:10:100 150:50:250 300:100:2000 3000:1000:9000]./(100^2); % AP/hm2
 numberOfIterations = 15000;
-apHeight_vector = 3; % height above UE plane
+apHeight_vector = 1:5 ; % height above UE plane
 blockageDensity_vector = 1 - 1; %[100 200 500 1000] - 1 ;
 
 % USER BODY PARAMETERS
