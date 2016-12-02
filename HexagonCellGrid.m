@@ -1,4 +1,4 @@
-function [ position, numberOfAps, hexagonSide ] = HexagonCellGrid( areaSide, density )
+function [ position, numberOfAps, interSiteDistance ] = HexagonCellGrid( areaSide, density )
 %HEXAGONCELLGRID Generates cell position coordinates around UE
 %   (c) CONNECT Centre, 2016
 %   Trinity College Dublin
@@ -19,7 +19,7 @@ else
     Y = Y + [ repmat( [.5 0], [n,floor(n/2)] ), .5*ones(n,1) ];
 end
 
-interSiteDistance = hexagonSide * sin( pi/3 ) / sin( pi/6);
+interSiteDistance = hexagonSide * sin( 2*pi/3 ) / sin( pi/6);
 
 % Fit to cell ray
 X = .5 * interSiteDistance * X;
