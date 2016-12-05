@@ -1,41 +1,42 @@
-function [ position, numberOfAps, interSiteDistance ] = HexagonCellGrid( areaSide, density )
+function [ position, numberOfAps ] = ...
+    HexagonCellGrid( areaSide, interSiteDistance )
 %HEXAGONCELLGRID Generates cell position coordinates around UE
 %   (c) CONNECT Centre, 2016
 %   Trinity College Dublin
 %
 %   Author: Fadhil Firyaguna
 
-halfCells = ceil( ( areaSide * sqrt( density ) - 1 )/2 );
-hexagonSide = areaSide / ( areaSide * sqrt( density ) - 1 );
-
-% Generate hexagonal grid
-Rad3Over2 = sqrt(3) / 2;
-[ X, Y ] = meshgrid( -halfCells : 1 : (halfCells) );
-n = size( X, 1 );
-X = Rad3Over2 * X;
-if mod(n-1,4) == 0
-    Y = Y + [ repmat( [0 .5], [n,floor(n/2)] ), zeros(n,1) ];
-else
-    Y = Y + [ repmat( [.5 0], [n,floor(n/2)] ), .5*ones(n,1) ];
+% Define parameters
+id = interSiteDistance;
+hs = id * .5 / sin( pi/3 ); % hexagon side
+has = .5 * areaSide;
+hy1 = ceil( has / id ) * id;
+hx1 = ceil( has/(3*hs) ) * 3*hs;
+hy2 = hy1 - .5*id;
+hx2 = ceil( has/(1.5*hs) ) * 1.5*hs;
+if hx2 == hx1
+    hx2 = hx2 - 1.5*hs;
 end
 
-interSiteDistance = hexagonSide * sin( 2*pi/3 ) / sin( pi/6);
+% Generate hexagonal grid
+[ x1, y1 ] = meshgrid( -hx1 : 3*hs : hx1, -hy1 : id : hy1 );
+[ x2, y2 ] = meshgrid( -hx2 : 3*hs : hx2, -hy2 : id : hy2 );
 
-% Fit to cell ray
-X = .5 * interSiteDistance * X;
-Y = .5 * interSiteDistance * Y;
-
-% Reshape matrices to vector
-position = reshape( X, 1, [] ) + 1i*reshape( Y, 1, [] );
+% Reshape matrices to complex vector
+position1 = reshape( x1, 1, [] ) + 1i*reshape( y1, 1, [] );
+position2 = reshape( x2, 1, [] ) + 1i*reshape( y2, 1, [] );
+position = [ position1 position2 ];
 
 % Delete positions outside the area
-xv = [ -areaSide/2, areaSide/2 ];
-yv = [ -areaSide/2 + interSiteDistance/2, areaSide/2 ];
+xv = [ -has, has ];
+yv = [ -has, has ];
 xq = real( position );
 yq = imag( position );
 in = inpolygon(xq,yq,xv,yv);
 position = position(in);
-numberOfAps = numel(in);
+
+% Compute density
+numberOfAps = numel( position );
 
 end
 
