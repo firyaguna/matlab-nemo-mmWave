@@ -1,16 +1,16 @@
 % PARAMETERS FOR nemo_sim.m
 
 % TOPOLOGY
-areaSide = 100; % meters
-interSiteDistance_vector = [ 1:13 15 17 20 21 26 29 34 51 58 ]; % meters
-numberOfIterations = 10000;
-apHeight_vector = 1:5 ; % height above UE plane (meters)
+areaSide = 1000; % meters
+interSiteDistance_vector = 10.^((1:1:27)/10); %10.^((0:0.5:17.5)/10); %[ 1:13 15 17 20 21 26 29 34 51 58 ]; % meters 10.^((0:0.5:17.5)/10)
+numberOfIterations = 9000;
+apHeight_vector = 1:3:10 ; % height above UE plane (meters)
 blockageDensity_vector = 1 - 1; %[100 200 500 1000] - 1 ;
 
 % USER BODY PARAMETERS
 bodyAttenuation_vector = db2pow(-40); %db2pow( [-40 0] );
 bodyWide = 0.3; % meters
-distanceToUserBody = 0.3; % meters
+distanceToUserBody_vector = [0 .3]; % meters
 distanceToTopHead = 0.4; % meters
 
 % POWER
