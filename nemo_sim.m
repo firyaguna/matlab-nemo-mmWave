@@ -66,7 +66,7 @@ tstart = tic;
 currentProgress = 0;
 
 
-for db_id = 1:lenght( distanceToUserBody_vector )
+for db_id = 1:length( distanceToUserBody_vector )
     
     distanceToUserBody = distanceToUserBody_vector( db_id );
     
@@ -196,7 +196,7 @@ for db_id = 1:lenght( distanceToUserBody_vector )
                             % RECEIVED SINR
                             sinr = rxPower( servingAP_id ) ./ ...
                                 ( noisePower + sum( interfPower ) );
-                            sinr_vector( n_iter, bw_id, h_id, d_id, bl_id, ba_id ) = sinr;
+                            sinr_vector( n_iter, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = sinr;
 
                             % SPECTRAL EFFICIENCY log2(1+SINR)
                             spectralEff_vector( n_iter ) = log2( 1 + sinr );
@@ -224,16 +224,6 @@ for db_id = 1:lenght( distanceToUserBody_vector )
 
                         end % iterations end
 
-                        % COVERAGE SINR
-                            for st_id = 1:length( sinrThreshold_vector )
-                                sinrThreshold = sinrThreshold_vector( st_id );
-                                coverage = sum( ...
-                                            sinr_vector( :, bw_id, h_id, d_id, bl_id, ba_id, db_id ) > ...
-                                            sinrThreshold ) / ...
-                                            size( sinr_vector, 1 );
-                                coverage_sinr( st_id, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = ...
-                                    coverage;
-                            end
 
                         % AVERAGE SPECTRAL EFFICIENCY
                         avg_spectralEff( bw_id, h_id, d_id, bl_id, ba_id, db_id ) = ...
@@ -248,6 +238,7 @@ for db_id = 1:lenght( distanceToUserBody_vector )
         end % blockageDensity end
 
     end % bodyAttenuation end
+    
 end % distanceToUserBody end
 
 toc(tstart);
