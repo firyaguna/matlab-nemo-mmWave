@@ -1,5 +1,5 @@
 % NEMO DOWNLINK SIMULATION SCRIPT
-%   (c) CONNECT Centre, 2016
+%   (c) CONNECT Centre, 2016-2017
 %   Trinity College Dublin
 %
 %   This script simulates a set of mmW-APs placed in a hexagonal grid where
@@ -82,10 +82,11 @@ for db_id = 1:length( distanceToUserBody_vector )
 
                 apHeight = apHeight_vector( h_id );
 
-                for bw_id = 1:length( beamWidth_vector )
+                for bw_id = 1:length( sideLobeGainTx_vector )
 
                     % CELL PROPERTIES
-                    beamWidthTx = beamWidth_vector( bw_id );
+                    beamWidthTx = beamWidth_vector( 1 );
+                    sideLobeGainTx = sideLobeGainTx_vector(bw_id);
                     mainLobeGainTx = MainLobeGain( beamWidthTx, sideLobeGainTx );
                     mainLobeEdgeTx = apHeight * tan( beamWidthTx / 2 );
                     lobeEdge_matrix( bw_id, h_id ) = mainLobeEdgeTx;
