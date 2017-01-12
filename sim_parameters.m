@@ -24,7 +24,7 @@ sinrThreshold_vector = db2pow( -20:5:20 );
 % DIRECTIVITY GAIN
 beamWidth_vector = deg2rad( 90 ); %deg2rad( [30 60 90 120 150] );
 beamWidthRx = deg2rad( 360 );
-sideLobeGainTx_vector = db2pow( [ -20 -10 -3 ] );
+sideLobeGainTx_vector = db2pow( [ -20 -3 ] );
 sideLobeGainRx = db2pow( -10 );
 MainLobeGain = @(beamWidth,sideLobe) (2-sideLobe.*(1+cos(beamWidth./2))) ... 
                                         ./(1-cos(beamWidth./2));
