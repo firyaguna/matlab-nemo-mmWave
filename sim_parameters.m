@@ -2,15 +2,15 @@
 
 % TOPOLOGY
 areaSide = 400; % meters
-interSiteDistance_vector = 10.^((1:1:23)/10); %10.^((0:0.5:17.5)/10); %[ 1:13 15 17 20 21 26 29 34 51 58 ]; % meters 10.^((0:0.5:17.5)/10)
-numberOfIterations = 9000;
-apHeight_vector = 3; %[1 3 10] ; % height above UE plane (meters)
-blockageDensity_vector = 1 - 1; %[100 200 500 1000] - 1 ;
+interSiteDistance_vector = 10.^((1:22/100:23)/10); % meters
+numberOfIterations = 10000;
+apHeight_vector = [ 10 ] ; % height above UE plane (meters)
+blockageDensity_vector = 0; %[ 1 20 50 100 200 500 1000] - 1 ;
 
 % USER BODY PARAMETERS
-bodyAttenuation_vector = db2pow(-40); % db2pow( [-40 0] );
-bodyWide = 0.3; % meters
-distanceToUserBody_vector = .3; %[0 .3]; % meters
+bodyAttenuation_vector = db2pow( [ -40 ] );
+bodyWide = 0.4; % meters
+distanceToUserBody_vector = [ 0 .05 .15 .3 inf ]; % meters
 distanceToTopHead = 0.4; % meters
 
 % POWER
@@ -19,12 +19,11 @@ bandWidth = 100;    % MHz
 frequency = 60;     % GHz
 noiseFig = 9;       % dB
 noisePower = db2pow( -174 + noiseFig + 10*log10( bandWidth*1e6 ) );
-sinrThreshold_vector = db2pow( -20:5:20 );
 
 % DIRECTIVITY GAIN
-beamWidth_vector = deg2rad( 90 ); %deg2rad( [30 60 90 120 150] );
+beamWidth_vector = 2.*atan( .5 .* 10.^( (-1:22/36:29) / 10  ) ./ 10 );
 beamWidthRx = deg2rad( 360 );
-sideLobeGainTx_vector = db2pow( [ -20 -3 ] );
+sideLobeGainTx = db2pow( -10 );
 sideLobeGainRx = db2pow( -10 );
 MainLobeGain = @(beamWidth,sideLobe) (2-sideLobe.*(1+cos(beamWidth./2))) ... 
                                         ./(1-cos(beamWidth./2));

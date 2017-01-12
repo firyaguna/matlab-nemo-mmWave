@@ -26,13 +26,6 @@ sinr_vector = zeros( numberOfIterations, ...
                        length( blockageDensity_vector ), ...
                        length( bodyAttenuation_vector ), ...
                        length( distanceToUserBody_vector ) );
-coverage_sinr = zeros( length( sinrThreshold_vector ), ...
-                       length( beamWidth_vector ), ...
-                       length( apHeight_vector ), ...
-                       length( interSiteDistance_vector ), ...
-                       length( blockageDensity_vector ), ...
-                       length( bodyAttenuation_vector ), ...
-                       length( distanceToUserBody_vector ) );
 spectralEff_vector = zeros( 1, numberOfIterations );
 avg_spectralEff = zeros( length( beamWidth_vector ), ...
                        length( apHeight_vector ), ...
@@ -57,8 +50,8 @@ switch( pathLossModel )
     PL_NLOS = @(d) db2pow( - P_0_dB_NL ) .* d .^ ( - n_NL ) ...
         .* frequency .^ ( - gamma_NL );
     case { 'ci','generic' }
-    PL_LOS = @(d) (4*pi*frequency*1e9/3e8)^2 .* d .^ ( - n_L );
-    PL_NLOS = @(d) (4*pi*frequency*1e9/3e8)^2 .* d .^ ( - n_NL );
+    PL_LOS = @(d) (4*pi*frequency*1e9/3e8)^-2 .* d .^ ( - n_L );
+    PL_NLOS = @(d) (4*pi*frequency*1e9/3e8)^-2 .* d .^ ( - n_NL );
 end
 
 %% ITERATIONS
@@ -66,12 +59,12 @@ tstart = tic;
 currentProgress = 0;
 
 
-for db_id = 1:lenght( distanceToUserBody_vector )
+for db_id = 1:length( distanceToUserBody_vector )
     
     distanceToUserBody = distanceToUserBody_vector( db_id );
     
     for ba_id = 1:length( bodyAttenuation_vector )
-
+                   
         bodyAttenuation = bodyAttenuation_vector( ba_id );
 
         for bl_id = 1:length( blockageDensity_vector )
@@ -82,11 +75,10 @@ for db_id = 1:lenght( distanceToUserBody_vector )
 
                 apHeight = apHeight_vector( h_id );
 
-                for bw_id = 1:length( sideLobeGainTx_vector )
+                for bw_id = 1:length( beamWidth_vector )
 
                     % CELL PROPERTIES
-                    beamWidthTx = beamWidth_vector( 1 );
-                    sideLobeGainTx = sideLobeGainTx_vector(bw_id);
+                    beamWidthTx = beamWidth_vector( bw_id );
                     mainLobeGainTx = MainLobeGain( beamWidthTx, sideLobeGainTx );
                     mainLobeEdgeTx = apHeight * tan( beamWidthTx / 2 );
                     lobeEdge_matrix( bw_id, h_id ) = mainLobeEdgeTx;
@@ -153,14 +145,14 @@ for db_id = 1:lenght( distanceToUserBody_vector )
 
                             % DOWNLINK TRANSMIT POWER
                             % Transmit power per area is constant
-                            rxPower = txPower; % / numberOfAps;
+                            rxPower = txPower;% / numberOfAps;
 
                             % DOWNLINK RECEIVE POWER
                             rxPower = rxPower .* PL_LOS( distance3d );
 
-                            % CELL ASSOCIATION
-                            % Get the highest omnidirectional rx power
-                            [ max_rxPower, servingAP_id ] = max( rxPower );
+%                             % CELL ASSOCIATION
+%                             % Get the highest omnidirectional rx power
+%                             [ max_rxPower, servingAP_id ] = max( rxPower );
 
                             % SELF-BODY AND OTHER BODIES BLOCKAGE
                             % Check if bodies are between APs and UE
@@ -190,6 +182,10 @@ for db_id = 1:lenght( distanceToUserBody_vector )
                             % UE inside AP spotlight
                             rxPower( inCell_id ) = rxPower( inCell_id ) * mainLobeGainTx;
 
+                            % CELL ASSOCIATION
+                            % Get the highest rx power
+                            [ max_rxPower, servingAP_id ] = max( rxPower );
+
                             % INTERFERENCE
                             interfPower = rxPower;
                             interfPower( servingAP_id ) = 0;
@@ -197,7 +193,7 @@ for db_id = 1:lenght( distanceToUserBody_vector )
                             % RECEIVED SINR
                             sinr = rxPower( servingAP_id ) ./ ...
                                 ( noisePower + sum( interfPower ) );
-                            sinr_vector( n_iter, bw_id, h_id, d_id, bl_id, ba_id ) = sinr;
+                            sinr_vector( n_iter, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = sinr;
 
                             % SPECTRAL EFFICIENCY log2(1+SINR)
                             spectralEff_vector( n_iter ) = log2( 1 + sinr );
@@ -225,17 +221,6 @@ for db_id = 1:lenght( distanceToUserBody_vector )
 
                         end % iterations end
 
-                        % COVERAGE SINR
-                            for st_id = 1:length( sinrThreshold_vector )
-                                sinrThreshold = sinrThreshold_vector( st_id );
-                                coverage = sum( ...
-                                            sinr_vector( :, bw_id, h_id, d_id, bl_id, ba_id, db_id ) > ...
-                                            sinrThreshold ) / ...
-                                            size( sinr_vector, 1 );
-                                coverage_sinr( st_id, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = ...
-                                    coverage;
-                            end
-
                         % AVERAGE SPECTRAL EFFICIENCY
                         avg_spectralEff( bw_id, h_id, d_id, bl_id, ba_id, db_id ) = ...
                             mean( spectralEff_vector );
@@ -247,14 +232,14 @@ for db_id = 1:lenght( distanceToUserBody_vector )
             end % apHeight end
 
         end % blockageDensity end
-
+                
     end % bodyAttenuation end
 end % distanceToUserBody end
 
 toc(tstart);
 
 %% OUTPUTS
-outputName = 'nemo_sim_output';
+outputName = 'nemo/output/nemo_sim_maxpower_output';
 save( strcat( outputName, '.mat' ) );
 save( strcat( outputName, '_', datestr(now,'yyyymmddHHMM'), '.mat' ) );
 
