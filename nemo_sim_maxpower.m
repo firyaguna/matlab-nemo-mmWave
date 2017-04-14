@@ -5,9 +5,7 @@
 %   This script simulates a set of mmW-APs placed in a hexagonal grid where
 %   the user equipment (UE) is placed in the origin of the plane. The APs
 %   are deployed in the ceiling 'apHeight' meters above the UE, and they
-%   are transmitting a fixed directional beam pointed to the floor. The UE
-%   is attached to the AP which has the highest receive power from an
-%   omnidirectional transmission.
+%   are transmitting a fixed directional beam pointed to the floor.
 %   
 %   The UE is associated with the AP that provides with a downlink signal
 %   according to the strongest received signal power (maximum received
