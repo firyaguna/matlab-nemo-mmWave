@@ -8,6 +8,10 @@
 %   are transmitting a fixed directional beam pointed to the floor. The UE
 %   is attached to the AP which has the highest receive power from an
 %   omnidirectional transmission.
+%   
+%   The UE is associated with the AP that provides with a downlink signal
+%   according to the shortest 3D Euclidean distance (minimum distance
+%   association).
 %
 %
 %   Author: Fadhil Firyaguna
