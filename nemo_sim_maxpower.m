@@ -25,16 +25,18 @@ sinr_vector = zeros( numberOfIterations, ...
                        length( beamWidth_vector ), ...
                        length( apHeight_vector ), ...
                        length( interSiteDistance_vector ), ...
-                       length( blockageDensity_vector ), ...
+                       length( numberOfRandomBodies_vector ), ...
                        length( bodyAttenuation_vector ), ...
                        length( distanceToUserBody_vector ) );
-spectralEff_vector = zeros( 1, numberOfIterations );
-avg_spectralEff = zeros( length( beamWidth_vector ), ...
+numberOfBlockages_vector = zeros( numberOfIterations, ...
+                       39, ...
+                       length( beamWidth_vector ), ...
                        length( apHeight_vector ), ...
                        length( interSiteDistance_vector ), ...
-                       length( blockageDensity_vector ), ...
+                       length( numberOfRandomBodies_vector ), ...
                        length( bodyAttenuation_vector ), ...
                        length( distanceToUserBody_vector ) );
+% sinr2_vector = sinr_vector;
 lobeEdge_matrix = zeros( length( beamWidth_vector ), ...
                        length( apHeight_vector ) );
 numberOfAps_vector = zeros( size( interSiteDistance_vector ) );
@@ -69,9 +71,9 @@ for db_id = 1:length( distanceToUserBody_vector )
                    
         bodyAttenuation = bodyAttenuation_vector( ba_id );
 
-        for bl_id = 1:length( blockageDensity_vector )
+        for bl_id = 1:length( numberOfRandomBodies_vector )
 
-            numberOfHumanBlockages = blockageDensity_vector( bl_id );
+            numberOfHumanBlockages = numberOfRandomBodies_vector( bl_id );
 
             for h_id = 1:length( apHeight_vector )
 
@@ -93,25 +95,29 @@ for db_id = 1:length( distanceToUserBody_vector )
                             HexagonCellGrid( areaSide, interSiteDistance );
                         numberOfAps_vector( d_id ) = numberOfAps;
                         cellRadius = interSiteDistance * sin( pi/6 ) / sin( 2*pi/3 );
+                        
+                        blockageHist = zeros(2,0);
 
                         for n_iter = 1:numberOfIterations
 
                             % PLACE USER EQUIPMENT
-                            ueInCell = 0;
-                            while( ~ueInCell )
-                                % Generate random position
-                                uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
-                                xq = real( uePosition );
-                                yq = imag( uePosition );
-                                % Define hexagon cell limits
-                                L = linspace(0,2.*pi,7);
-                                xv = cos(L)';
-                                yv = sin(L)';
-                                % Check if random position is inside hexagon
-                                ueInCell = inpolygon(xq,yq,xv,yv);
-                            end
+                            uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
+%                             uePosition = .9 + 1i*.8;
+%                             ueInCell = 0;
+%                             while( ~ueInCell )
+%                                 % Generate random position
+%                                 uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
+%                                 xq = real( uePosition );
+%                                 yq = imag( uePosition );
+%                                 % Define hexagon cell limits
+%                                 L = linspace(0,2.*pi,7);
+%                                 xv = cos(L)';
+%                                 yv = sin(L)';
+%                                 % Check if random position is inside hexagon
+%                                 ueInCell = inpolygon(xq,yq,xv,yv);
+%                             end
                             % Place UE in origin and shift cell positions
-                            apPosition_temp = apPosition + cellRadius * uePosition;
+                            apPosition_temp = apPosition - areaSide/2 * uePosition;
                             % Get 2-D distance from AP to UE
                             distance2d = abs( apPosition_temp );
                             % Get angle of arrival from AP to UE
@@ -125,9 +131,10 @@ for db_id = 1:length( distanceToUserBody_vector )
                             outCell_id = find( distance2d > mainLobeEdgeTx );
 
                             % PLACE HUMAN BODY BLOCKERS
-                            humanBodies_temp = areaSide .* ...
+                            humanBodies_temp = areaSide/2 .* ...
                                 ( -1+2.*rand( 1, numberOfHumanBlockages )...
                                 + -1i+2i.*rand( 1, numberOfHumanBlockages ) );
+                            humanBodies_temp = humanBodies_temp - areaSide/2 * uePosition;
                             % Specify user body position
                             userBodyAngle = -pi + 2*pi * rand(1); % angle of the user body center
                             % User body is in a specific distance from the UE device
@@ -144,6 +151,16 @@ for db_id = 1:length( distanceToUserBody_vector )
                                                 ./ distanceToTopHead;
                             % Compute blocking angle variation
                             angleToBodiesVar = atan( (bodyWide/2) ./ distanceToBodies );
+                            
+                            % DEFINE ON/OFF APs
+                            % Check if UEs are inside AP illumination
+%                             checkIllumination = abs( ...
+%                                 repmat( apPosition_temp, length( humanBodies ), 1 ) - ...
+%                                 repmat( humanBodies.', 1, length( apPosition_temp ) ) ) < ...
+%                                 mainLobeEdgeTx .* ...
+%                                     ones( length( humanBodies ), length( apPosition_temp ) );
+                            % Check which AP has no UE presence
+%                             onOffApVector = sum( checkIllumination, 1 ) > 0;
 
                             % DOWNLINK TRANSMIT POWER
                             % Transmit power per area is constant
@@ -157,14 +174,9 @@ for db_id = 1:length( distanceToUserBody_vector )
 %                             [ max_rxPower, servingAP_id ] = max( rxPower );
 
                             % SELF-BODY AND OTHER BODIES BLOCKAGE
-                            % Check if bodies are between APs and UE
-                            checkDistance = ...
-                                repmat( distance2d, length( distanceToBodies ), 1 ) > ...
-                                repmat( distanceToBodies', 1, length( distance2d ) );
                             % Check if top head of bodies may be blocking APs
-                            checkMinDistance = abs( ...
-                                repmat( distance2d, length( bodyBlockDistances ), 1 ) - ...
-                                repmat( distanceToBodies', 1, length( distance2d ) ) ) > ...
+                            checkMinDistance = ...
+                                repmat( distance2d, length( bodyBlockDistances ), 1 ) > ...
                                 repmat( bodyBlockDistances', 1, length( distance2d ) );
                             % Check if bodies are in the same direction of APs
                             checkDirection = abs( ...
@@ -173,9 +185,12 @@ for db_id = 1:length( distanceToUserBody_vector )
                                 repmat( angleToBodiesVar', 1, length( angleToAp ) );
                             % Check how many bodies are blocking each AP
                             numberOfBlockages = sum( ...
-                                checkDirection .* checkMinDistance .* checkDistance, 1 );
+                                checkDirection .* checkMinDistance, 1 );
+                            % Save data to histogram
+                            blockageHist = [ blockageHist(1,:) (numberOfBlockages > 0); ... 
+                                             blockageHist(2,:)  distance2d ];
                             % Apply body attenuation
-                            rxPower = rxPower .* bodyAttenuation .^ ( numberOfBlockages );
+                            rxPower = rxPower .* bodyAttenuation .^ ( numberOfBlockages > 0 );
 
                             % DIRECTIVITY GAIN
                             % Define gains according to spotlight coverage
@@ -190,21 +205,28 @@ for db_id = 1:length( distanceToUserBody_vector )
 
                             % INTERFERENCE
                             interfPower = rxPower;
+                            % turn off idle APs
+%                             interfPower = interfPower .* onOffApVector;
+                            % serving AP is not interferer
                             interfPower( servingAP_id ) = 0;
 
                             % RECEIVED SINR
                             sinr = rxPower( servingAP_id ) ./ ...
                                 ( noisePower + sum( interfPower ) );
+%                             sinr2 = rxPower( servingAP_id ) ./ ...
+%                                 ( noisePower + sum( interfPower.* onOffApVector ) );
+                            
                             sinr_vector( n_iter, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = sinr;
-
-                            % SPECTRAL EFFICIENCY log2(1+SINR)
-                            spectralEff_vector( n_iter ) = log2( 1 + sinr );
+                            numberOfBlockages_vector( n_iter, :, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = ...
+                                numberOfBlockages_vector( n_iter, :, bw_id, h_id, d_id, bl_id, ba_id, db_id ) ...
+                                + (numberOfBlockages > 0);
+%                             sinr2_vector( n_iter, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = sinr2;
 
                             % DISPLAY PROGRESS
                             totalProgress = length( beamWidth_vector ) * ...
                                             length( interSiteDistance_vector ) * ...
                                             length( apHeight_vector ) * ...
-                                            length( blockageDensity_vector ) * ...
+                                            length( numberOfRandomBodies_vector ) * ...
                                             length( bodyAttenuation_vector ) * ...
                                             length( distanceToUserBody_vector ) * ...
                                             numberOfIterations;
@@ -216,16 +238,12 @@ for db_id = 1:length( distanceToUserBody_vector )
                                 tnow = toc( tstart );
                                 toc( tstart );
                                 estimatedEnd = ( tnow * 100 / loopProgress ) - tnow;
-                                disp(['Estimated end time is ' num2str(estimatedEnd) ' seconds.']);
+                                hms = fix(mod(estimatedEnd, [0, 3600, 60]) ./ [3600, 60, 1]);
+                                disp(['Estimated duration ' hms(1) ':' hms(2) ':' hms(3) ]);
                             end
 
 
-
                         end % iterations end
-
-                        % AVERAGE SPECTRAL EFFICIENCY
-                        avg_spectralEff( bw_id, h_id, d_id, bl_id, ba_id, db_id ) = ...
-                            mean( spectralEff_vector );
 
                     end % apDensity end
 
@@ -236,12 +254,13 @@ for db_id = 1:length( distanceToUserBody_vector )
         end % blockageDensity end
                 
     end % bodyAttenuation end
+    
 end % distanceToUserBody end
 
 toc(tstart);
 
 %% OUTPUTS
-outputName = 'nemo/output/nemo_sim_maxpower_output';
+outputName = 'output/nemo_sim_maxpower_output';
 save( strcat( outputName, '.mat' ) );
 save( strcat( outputName, '_', datestr(now,'yyyymmddHHMM'), '.mat' ) );
 

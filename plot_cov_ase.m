@@ -1,7 +1,7 @@
 %%
-ca_id = 1;
+ca_id = 2;
 h_id = 1;
-db_id = 4;
+db_id = 1;
 isd = interSiteDistance_vector;
 st = -5;
 
@@ -11,7 +11,7 @@ blockFreeRadius = apHeight_vector(h_id) * ...
     / distanceToTopHead;
 
 % sinr vector
-s = squeeze( sinrv{ca_id}( :,:,h_id,:,:,:,db_id ) ); % 10000 50 101
+s = squeeze( sinrv{ca_id}( :,:,h_id,:,1,:,: ) ); % 1 1 1 1 2 1 1
 
 % coverage
 sinr_threshold = db2pow( st );
@@ -24,6 +24,7 @@ avg_se = squeeze( mean( n_se, 1 ) );
 cellarea = repmat((2*sqrt(3).*(.5.*isd).^2),length(beamWidth_vector),1);
 ase = avg_se ./ cellarea;
 
+%%
 % % beamwidth design
 % lhr = 2; % lobe-halfdistance-ratio
 % for d_id = 1:length( isd )
@@ -55,12 +56,12 @@ map_ss2 = diag( ase( c_bw, : ) )';
 
 colorSpecBw0 = jet(length( beamWidth_vector ));
 colorSpecBw = imadjust( colorSpecBw0, [], [.6 1] );
-bw_id = 17;
+bw_id = 1;
 bw_id2 = 11;
 
 %%
-figure(9);
-clf(9);
+figure(8);
+clf(8);
 
 r1 = annotation('textbox',...
     [0.13 0.11 0.19 0.82],...
@@ -173,12 +174,12 @@ hold on;
 h1 = semilogx( .5.*isd, 100.*cov(bw_id,:), '-' );
 set( h1, 'Color', colorSpecBw0(bw_id,:) );
 set( h1, 'Linewidth', 2 );
-h1x = semilogx( .5.*isd, 100.*cov(end-bw_id2,:), '-' );
-set( h1x, 'Color', colorSpecBw0(end-bw_id2,:) );
-set( h1x, 'Linewidth', 2 );
+% h1x = semilogx( .5.*isd, 100.*cov(end-bw_id2,:), '-' );
+% set( h1x, 'Color', colorSpecBw0(end-bw_id2,:) );
+% set( h1x, 'Linewidth', 2 );
 % envelope
-h2 = semilogx( .5.*isd(c_isd(8:end-10)), 100.*max_cc(8:end-10), 'o-k' );
-set( h2, 'Linewidth', 1.5 );
+% h2 = semilogx( .5.*isd(c_isd(8:end-10)), 100.*max_cc(8:end-10), 'o-k' );
+% set( h2, 'Linewidth', 1.5 );
 % envelope2
 % h2x = semilogx( .5.*isd, 100.*max_cc2, 'v-m' );
 % designed
@@ -187,12 +188,12 @@ set( h2, 'Linewidth', 1.5 );
 rblock = line([blockFreeRadius blockFreeRadius],[0 100],'Color',[.4 .4 .4]);
 set( rblock, 'LineStyle', '--' );
 
-legend( [h1,h1x,h2,rblock], ...
-    strcat( '\Theta_{BW} ', num2str( rad2deg(beamWidth_vector(bw_id)), '= %.0f ' ), '\circ' ), ...
-    strcat( '\Theta_{BW} ', num2str( rad2deg(beamWidth_vector(end-bw_id2)), '= %.0f ' ), '\circ' ), ...
-    'peak cov.', ...
-    'r_{blockFree}', ...
-    'Location', 'west');
+% legend( [h1,h1x,h2,rblock], ...
+%     strcat( '\Theta_{BW} ', num2str( rad2deg(beamWidth_vector(bw_id)), '= %.0f ' ), '\circ' ), ...
+%     strcat( '\Theta_{BW} ', num2str( rad2deg(beamWidth_vector(end-bw_id2)), '= %.0f ' ), '\circ' ), ...
+%     'peak cov.', ...
+%     'r_{blockFree}', ...
+%     'Location', 'west');
 
 ylim([ 0 102 ]);
 xlim( [ .5 100 ] );

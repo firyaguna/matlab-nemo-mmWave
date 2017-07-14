@@ -1,16 +1,17 @@
 % PARAMETERS FOR nemo_sim.m
 
 % TOPOLOGY
-areaSide = 400; % meters
-interSiteDistance_vector = 10.^((1:22/100:23)/10); % meters
+areaSide = 100; % meters
+interSiteDistance_vector = 18; %10.^((1:3:23)/10); % meters
 numberOfIterations = 10000;
-apHeight_vector = [ 10 ] ; % height above UE plane (meters)
-blockageDensity_vector = 0; %[ 1 20 50 100 200 500 1000] - 1 ;
+apHeight_vector = 10; % height above UE plane (meters)
+ppm2 = [ .03]; % people per square meter
+numberOfRandomBodies_vector = ceil(ppm2.*(areaSide^2)); %6*10.^(0:1:5); %[ 1 20 50 100 200 500 1000] - 1 ;
 
 % USER BODY PARAMETERS
-bodyAttenuation_vector = db2pow( [ -40 ] );
+bodyAttenuation_vector = db2pow( -40 );
 bodyWide = 0.4; % meters
-distanceToUserBody_vector = [ 0 .05 .15 .3 inf ]; % meters
+distanceToUserBody_vector = .3; %[ 0 .05 .15 .3 inf ]; % meters
 distanceToTopHead = 0.4; % meters
 
 % POWER
@@ -21,7 +22,7 @@ noiseFig = 9;       % dB
 noisePower = db2pow( -174 + noiseFig + 10*log10( bandWidth*1e6 ) );
 
 % DIRECTIVITY GAIN
-beamWidth_vector = 2.*atan( .5 .* 10.^( (-1:22/36:29) / 10  ) ./ 10 );
+beamWidth_vector = deg2rad( 90 ); %2.*atan( .5 .* 10.^( (-1:22/36:29) / 10  ) ./ 10 );
 beamWidthRx = deg2rad( 360 );
 sideLobeGainTx = db2pow( -10 );
 sideLobeGainRx = db2pow( -10 );
