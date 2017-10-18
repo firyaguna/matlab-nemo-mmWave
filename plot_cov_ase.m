@@ -1,5 +1,6 @@
 %%
-ca_id = 2;
+bl_id = 3;
+ca_id = 1;
 h_id = 1;
 db_id = 1;
 isd = interSiteDistance_vector;
@@ -11,8 +12,8 @@ blockFreeRadius = apHeight_vector(h_id) * ...
     / distanceToTopHead;
 
 % sinr vector
-s = squeeze( sinrv{ca_id}( :,:,h_id,:,1,:,: ) ); % 1 1 1 1 2 1 1
-
+% s = squeeze( sinrv{ca_id}( :,:,h_id,:,1,:,: ) ); % 1 1 1 1 2 1 1
+s = squeeze( sinr_vector(:,:,:,:,bl_id) );
 % coverage
 sinr_threshold = db2pow( st );
 cov = sum( s > sinr_threshold, 1 ) ./ numberOfIterations;

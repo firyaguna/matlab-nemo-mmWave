@@ -20,6 +20,8 @@ clear;
 %% PARAMETERS
 sim_parameters;
 
+function_models;
+
 %% INITIALIZE VECTORS
 sinr_vector = zeros( numberOfIterations, ...
                        length( beamWidth_vector ), ...
@@ -28,72 +30,55 @@ sinr_vector = zeros( numberOfIterations, ...
                        length( numberOfRandomBodies_vector ), ...
                        length( bodyAttenuation_vector ), ...
                        length( distanceToUserBody_vector ) );
-numberOfBlockages_vector = zeros( numberOfIterations, ...
-                       39, ...
-                       length( beamWidth_vector ), ...
-                       length( apHeight_vector ), ...
-                       length( interSiteDistance_vector ), ...
-                       length( numberOfRandomBodies_vector ), ...
-                       length( bodyAttenuation_vector ), ...
-                       length( distanceToUserBody_vector ) );
+% numberOfBlockages_vector = zeros( numberOfIterations, ...
+%                        23, ...
+%                        length( beamWidth_vector ), ...
+%                        length( apHeight_vector ), ...
+%                        length( interSiteDistance_vector ), ...
+%                        length( numberOfRandomBodies_vector ), ...
+%                        length( bodyAttenuation_vector ), ...
+%                        length( distanceToUserBody_vector ) );
 % sinr2_vector = sinr_vector;
 lobeEdge_matrix = zeros( length( beamWidth_vector ), ...
                        length( apHeight_vector ) );
 numberOfAps_vector = zeros( size( interSiteDistance_vector ) );
-
-%% SCENARIO
-
-% PATH LOSS MODEL
-switch( pathLossModel )
-    case 'belfast'
-    PL_LOS = @(d) db2pow( - P_0_dB_L ) .* d .^ ( - n_L );
-    PL_NLOS = @(d) db2pow( - P_0_dB_NL ) .* d .^ ( - n_NL );
-    case 'abg'
-    PL_LOS = @(d) db2pow( - P_0_dB_L ) .* d .^ ( - n_L ) ...
-        .* frequency .^ ( - gamma_L );
-    PL_NLOS = @(d) db2pow( - P_0_dB_NL ) .* d .^ ( - n_NL ) ...
-        .* frequency .^ ( - gamma_NL );
-    case { 'ci','generic' }
-    PL_LOS = @(d) (4*pi*frequency*1e9/3e8)^-2 .* d .^ ( - n_L );
-    PL_NLOS = @(d) (4*pi*frequency*1e9/3e8)^-2 .* d .^ ( - n_NL );
-end
 
 %% ITERATIONS
 tstart = tic;
 currentProgress = 0;
 
 
-for db_id = 1:length( distanceToUserBody_vector )
+for distanceToBody_id = 1:length( distanceToUserBody_vector )
     
-    distanceToUserBody = distanceToUserBody_vector( db_id );
+    distanceToUserBody = distanceToUserBody_vector( distanceToBody_id );
     
-    for ba_id = 1:length( bodyAttenuation_vector )
+    for bodyAtt_id = 1:length( bodyAttenuation_vector )
                    
-        bodyAttenuation = bodyAttenuation_vector( ba_id );
+        bodyAttenuation = bodyAttenuation_vector( bodyAtt_id );
 
-        for bl_id = 1:length( numberOfRandomBodies_vector )
+        for numBodies_id = 1:length( numberOfRandomBodies_vector )
 
-            numberOfHumanBlockages = numberOfRandomBodies_vector( bl_id );
+            numberOfHumanBlockages = numberOfRandomBodies_vector( numBodies_id );
 
-            for h_id = 1:length( apHeight_vector )
+            for height_id = 1:length( apHeight_vector )
 
-                apHeight = apHeight_vector( h_id );
+                apHeight = apHeight_vector( height_id );
 
-                for bw_id = 1:length( beamWidth_vector )
+                for beamwidth_id = 1:length( beamWidth_vector )
 
                     % CELL PROPERTIES
-                    beamWidthTx = beamWidth_vector( bw_id );
+                    beamWidthTx = beamWidth_vector( beamwidth_id );
                     mainLobeGainTx = MainLobeGain( beamWidthTx, sideLobeGainTx );
                     mainLobeEdgeTx = apHeight * tan( beamWidthTx / 2 );
-                    lobeEdge_matrix( bw_id, h_id ) = mainLobeEdgeTx;
+                    lobeEdge_matrix( beamwidth_id, height_id ) = mainLobeEdgeTx;
 
-                    for d_id = 1:length( interSiteDistance_vector )
+                    for density_id = 1:length( interSiteDistance_vector )
 
                         % GENERATE TOPOLOGY
-                        interSiteDistance = interSiteDistance_vector( d_id );
+                        interSiteDistance = interSiteDistance_vector( density_id );
                         [ apPosition, numberOfAps ] = ...
                             HexagonCellGrid( areaSide, interSiteDistance );
-                        numberOfAps_vector( d_id ) = numberOfAps;
+                        numberOfAps_vector( density_id ) = numberOfAps;
                         cellRadius = interSiteDistance * sin( pi/6 ) / sin( 2*pi/3 );
                         
                         blockageHist = zeros(2,0);
@@ -102,20 +87,6 @@ for db_id = 1:length( distanceToUserBody_vector )
 
                             % PLACE USER EQUIPMENT
                             uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
-%                             uePosition = .9 + 1i*.8;
-%                             ueInCell = 0;
-%                             while( ~ueInCell )
-%                                 % Generate random position
-%                                 uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
-%                                 xq = real( uePosition );
-%                                 yq = imag( uePosition );
-%                                 % Define hexagon cell limits
-%                                 L = linspace(0,2.*pi,7);
-%                                 xv = cos(L)';
-%                                 yv = sin(L)';
-%                                 % Check if random position is inside hexagon
-%                                 ueInCell = inpolygon(xq,yq,xv,yv);
-%                             end
                             % Place UE in origin and shift cell positions
                             apPosition_temp = apPosition - areaSide/2 * uePosition;
                             % Get 2-D distance from AP to UE
@@ -125,10 +96,6 @@ for db_id = 1:length( distanceToUserBody_vector )
                             % Get 3-D distance from AP to UE
                             distance3d = sqrt( distance2d.^2 + apHeight^2 );
 
-                            % BEAM COVERAGE
-                            % Define which AP are covering the UE
-                            inCell_id = find( distance2d <= mainLobeEdgeTx );
-                            outCell_id = find( distance2d > mainLobeEdgeTx );
 
                             % PLACE HUMAN BODY BLOCKERS
                             humanBodies_temp = areaSide/2 .* ...
@@ -153,15 +120,20 @@ for db_id = 1:length( distanceToUserBody_vector )
                             angleToBodiesVar = atan( (bodyWide/2) ./ distanceToBodies );
                             
                             % DEFINE ON/OFF APs
-                            % Check if UEs are inside AP illumination
-%                             checkIllumination = abs( ...
-%                                 repmat( apPosition_temp, length( humanBodies ), 1 ) - ...
-%                                 repmat( humanBodies.', 1, length( apPosition_temp ) ) ) < ...
-%                                 mainLobeEdgeTx .* ...
-%                                     ones( length( humanBodies ), length( apPosition_temp ) );
-                            % Check which AP has no UE presence
-%                             onOffApVector = sum( checkIllumination, 1 ) > 0;
-
+%                             distance2d_matrix = abs( ...
+%                                 repmat( apPosition_temp, length( humanBodies_temp ), 1 ) - ...
+%                                 repmat( humanBodies_temp.', 1, length( apPosition_temp ) ) ...
+%                                 );
+%                             distance3d_matrix = sqrt( distance2d_matrix.^2 + apHeight^2 );
+%                             illuminated_matrix = distance2d_matrix < mainLobeEdgeTx;
+%                             rxPower_matrix = txPower ...
+%                                         .* PL_LOS( distance3d_matrix ) ...
+%                                         .* ANT_GAIN( illuminated_matrix,...
+%                                                      sideLobeGainTx,...
+%                                                      mainLobeGainTx );
+%                             aboveThresh_matrix = rxPower_matrix > rxPower_threshold;
+%                             onOffAp_vector = sum(aboveThresh_matrix,1) > 0;
+                            
                             % DOWNLINK TRANSMIT POWER
                             % Transmit power per area is constant
                             rxPower = txPower;% / numberOfAps;
@@ -191,13 +163,24 @@ for db_id = 1:length( distanceToUserBody_vector )
                                              blockageHist(2,:)  distance2d ];
                             % Apply body attenuation
                             rxPower = rxPower .* bodyAttenuation .^ ( numberOfBlockages > 0 );
+                            
+                            % BODY EFFECT ON FADING GAIN
+                            % Check if body orientation leads to body reflection
+                            % Condition: any body fraction should be aligned 
+                            % with both UE and AP
+                            isReflected = abs( ...
+                                repmat( angleToAp, length( userBodyAngle ), 1 ) - ...
+                                repmat( userBodyAngle', 1, length( angleToAp ) ) ) < ...
+                                repmat( angleToBodiesVar(1) + pi, 1, length( angleToAp ) );
 
+                            rxPower = rxPower .* FADING_BODY_GAIN( isReflected );
+                            
                             % DIRECTIVITY GAIN
                             % Define gains according to spotlight coverage
-                            % UE outside AP spotlight
-                            rxPower( outCell_id ) = rxPower( outCell_id ) * sideLobeGainTx;
-                            % UE inside AP spotlight
-                            rxPower( inCell_id ) = rxPower( inCell_id ) * mainLobeGainTx;
+                            illuminated = distance2d < mainLobeEdgeTx;
+                            rxPower = rxPower .* ANT_GAIN( illuminated,...
+                                                        sideLobeGainTx,...
+                                                        mainLobeGainTx );
 
                             % CELL ASSOCIATION
                             % Get the highest rx power
@@ -214,13 +197,18 @@ for db_id = 1:length( distanceToUserBody_vector )
                             sinr = rxPower( servingAP_id ) ./ ...
                                 ( noisePower + sum( interfPower ) );
 %                             sinr2 = rxPower( servingAP_id ) ./ ...
-%                                 ( noisePower + sum( interfPower.* onOffApVector ) );
+%                                 ( noisePower + sum( interfPower.* onOffAp_vector ) );
                             
-                            sinr_vector( n_iter, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = sinr;
-                            numberOfBlockages_vector( n_iter, :, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = ...
-                                numberOfBlockages_vector( n_iter, :, bw_id, h_id, d_id, bl_id, ba_id, db_id ) ...
-                                + (numberOfBlockages > 0);
-%                             sinr2_vector( n_iter, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = sinr2;
+                            sinr_vector( n_iter,...
+                                beamwidth_id,...
+                                height_id,...
+                                density_id,...
+                                numBodies_id,...
+                                bodyAtt_id,...
+                                distanceToBody_id ) = sinr;
+%                             numberOfBlockages_vector( n_iter, :, bw_id, h_id, d_id, bl_id, ba_id, db_id ) = ...
+%                                 numberOfBlockages_vector( n_iter, :, bw_id, h_id, d_id, bl_id, ba_id, db_id ) ...
+%                                 + (numberOfBlockages > 0);
 
                             % DISPLAY PROGRESS
                             totalProgress = length( beamWidth_vector ) * ...
@@ -238,8 +226,10 @@ for db_id = 1:length( distanceToUserBody_vector )
                                 tnow = toc( tstart );
                                 toc( tstart );
                                 estimatedEnd = ( tnow * 100 / loopProgress ) - tnow;
+                                disp(['Estimated end in ' num2str(estimatedEnd) ' seconds.' ]);
                                 hms = fix(mod(estimatedEnd, [0, 3600, 60]) ./ [3600, 60, 1]);
-                                disp(['Estimated duration ' hms(1) ':' hms(2) ':' hms(3) ]);
+                                disp(['Estimated duration ' ...
+                                    num2str(hms(1)) ':' num2str(hms(2)) ':' num2str(hms(3)) ]);
                             end
 
 

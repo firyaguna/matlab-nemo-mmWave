@@ -1,11 +1,11 @@
-% PARAMETERS FOR nemo_sim.m
+% PARAMETERS OF THE SYSTEM
 
 % TOPOLOGY
-areaSide = 100; % meters
-interSiteDistance_vector = 18; %10.^((1:3:23)/10); % meters
-numberOfIterations = 10000;
+areaSide = 200; % meters
+interSiteDistance_vector = 10.^((5:1:23)/10); % meters
+numberOfIterations = 800;
 apHeight_vector = 10; % height above UE plane (meters)
-ppm2 = [ .03]; % people per square meter
+ppm2 = [.0001 .5]; % people per square meter
 numberOfRandomBodies_vector = ceil(ppm2.*(areaSide^2)); %6*10.^(0:1:5); %[ 1 20 50 100 200 500 1000] - 1 ;
 
 % USER BODY PARAMETERS
@@ -20,9 +20,10 @@ bandWidth = 100;    % MHz
 frequency = 60;     % GHz
 noiseFig = 9;       % dB
 noisePower = db2pow( -174 + noiseFig + 10*log10( bandWidth*1e6 ) );
+rxPower_threshold = db2pow( -65 ); %dBm threshold for AP association
 
 % DIRECTIVITY GAIN
-beamWidth_vector = deg2rad( 90 ); %2.*atan( .5 .* 10.^( (-1:22/36:29) / 10  ) ./ 10 );
+beamWidth_vector = deg2rad( [ 90 120 ] ); %2.*atan( .5 .* 10.^( (-1:22/36:29) / 10  ) ./ 10 );
 beamWidthRx = deg2rad( 360 );
 sideLobeGainTx = db2pow( -10 );
 sideLobeGainRx = db2pow( -10 );
@@ -31,28 +32,15 @@ MainLobeGain = @(beamWidth,sideLobe) (2-sideLobe.*(1+cos(beamWidth./2))) ...
 mainLobeGainRx = MainLobeGain( beamWidthRx, sideLobeGainRx );
 
 % PATH LOSS
-pathLossModel = 'generic';  
-    % 'belfast' - empirical Belfast off-body CAR PARK measurements results
-    % 'abg' - alpha-beta-gamma NYU urban micro open square
-    % 'ci' - close-in NYU urban micro open square
+% Free-space
+n_L = 2; % attenuation exponent
 
-switch( pathLossModel )
-    case 'generic'
-        n_L = 2.0;          % LOS attenuation exponent
-        n_NL = 6.0;         % NLOS attenuation exponent
-    case 'belfast'
-        n_L = 1.7;          % LOS attenuation exponent
-        n_NL = 1.9;         % NLOS attenuation exponent
-        P_0_dB_L = 18.2;	% LOS path loss reference
-        P_0_dB_NL = 58.0;	% NLOS path loss reference
-    case 'abg'
-        n_L = 2.6;          % LOS attenuation exponent
-        n_NL = 4.4;         % NLOS attenuation exponent
-        P_0_dB_L = 24;      % LOS path loss reference
-        P_0_dB_NL = 2.4;	% NLOS path loss reference
-        gamma_L = 1.6;      % LOS frequency attenuation exponent
-        gamma_NL = 1.9;     % NLOS frequency attenuation exponent
-    case 'ci'
-        n_L = 1.9;          % LOS attenuation exponent
-        n_NL = 2.8;         % NLOS attenuation exponent
-end
+% SMALL-SCALE FADING
+% Nakagami distribution
+% Shape parameter \mu
+mu_R = .2; % reflected fading
+mu_S = .5; % scattered fading
+mu_D = 3; % direct fading
+% Scale parameter \omega
+om = 1;
+
