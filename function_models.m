@@ -1,7 +1,38 @@
 % FUNCTIONS FOR SYSTEM MODELING
 
 % PATH LOSS MODEL
-PL_LOS = @(d) (4*pi*frequency*1e9/3e8)^-2 .* d .^ ( - n_L );
+PL = @(d,p0_dB,n) db2pow( -p0_dB ) .* d .^( -n );
+
+% SHADOWING FADING MODEL - signal envelope
+SHADOWING_FADING = cell(2);
+for i=1:2 % [LOS;NLOS]
+    for j=1:2 % [pocket,hand]
+        SHADOWING_FADING{i,j} = makedist('Gamma','a',a(i,j),'b',b(i,j));
+    end
+end
+SHADOWING_FADING_POWER_GAIN = @(los,d2b,size) ...
+    random( SHADOWING_FADING{los,d2b}, size ).^2;
+
+% SMALL-SCALE FADING MODEL - signal envelope
+SMALL_FADING = cell(2);
+for i=1:2 % [LOS;NLOS]
+    for j=1:2 % [pocket,hand]
+        SMALL_FADING{i,j} = makedist('Nakagami','mu',m(i,j),'omega',o(i,j));
+    end
+end
+SMALL_FADING_POWER_GAIN = @(los,d2b,size) ...
+    random( SMALL_FADING{los,d2b}, size ).^2;
+
+% TOTAL CHANNEL LOSS
+CHANNEL_LOSS = @(d,blockedAps,d2b) ...
+    (1-blockedAps) .* ( ... % line-of-sight
+        PL( d, p0_dB(1,d2b), n(1,d2b) ) .* ...
+        SHADOWING_FADING_POWER_GAIN( 1, d2b, size(d) ) .* ...
+        SMALL_FADING_POWER_GAIN( 1, d2b, size(d) ) ) + ...
+    blockedAps .* (... % non-line-of-sight
+        PL( d, p0_dB(2,d2b), n(2,d2b) ) .* ...
+        SHADOWING_FADING_POWER_GAIN( 2, d2b, size(d) ) .* ...
+        SMALL_FADING_POWER_GAIN(  2, d2b, size(d) ) );
 
 % ANTENNA GAIN MODEL
 % ANT_GAIN = @(d,rm,m,M) m + (M-m).*heaviside(-d+rm); % d is the 2d distance

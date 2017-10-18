@@ -1,29 +1,21 @@
-%%
-bl_id = 3;
-ca_id = 1;
-h_id = 1;
-db_id = 1;
-isd = interSiteDistance_vector;
-st = -5;
+%% DRAW COVERAGE AND SPECTRAL EFFECIENCY CURVES
 
-% self-body block free radius
-blockFreeRadius = apHeight_vector(h_id) * ...
-    distanceToUserBody_vector(db_id) ...
-    / distanceToTopHead;
-
-% sinr vector
-% s = squeeze( sinrv{ca_id}( :,:,h_id,:,1,:,: ) ); % 1 1 1 1 2 1 1
-s = squeeze( sinr_vector(:,:,:,:,bl_id) );
-% coverage
-sinr_threshold = db2pow( st );
-cov = sum( s > sinr_threshold, 1 ) ./ numberOfIterations;
-cov = squeeze( cov );
-
-% spectral efficiency
-n_se = log2( 1 + s );
-avg_se = squeeze( mean( n_se, 1 ) );
-cellarea = repmat((2*sqrt(3).*(.5.*isd).^2),length(beamWidth_vector),1);
-ase = avg_se ./ cellarea;
+% fix all parameters except beamwidth and density
+s = squeeze( sinr_vector( ...
+                :, ... n_iter :::::::::::::::
+                :, ... beamwidth_id :::::::::
+                1, ... height_id
+                :, ... density_id :::::::::::
+                1, ... numBodies_id
+                1, ... bodyAtt_id
+                1  ... distanceToBody_id
+            ));
+% compute coverage and ASE as functions of beamwidth and density
+[ cov, ase ] = ComputeResults( s, ... % SINR vector
+                               db2pow( -5 ), ... % SINR threshold in dB
+                               numberOfIterations, ...
+                               interSiteDistance_vector, ...
+                               beamWidth_vector );
 
 %%
 % % beamwidth design

@@ -107,7 +107,7 @@ for distanceToBody_id = 1:length( distanceToUserBody_vector )
                             HexagonCellGrid( areaSide, interSiteDistance );
                         numberOfAps_vector( density_id ) = numberOfAps;
                         cellRadius = interSiteDistance * sin( pi/6 ) / sin( 2*pi/3 );
-                        blockageTrialsIndy = zeros( 1, numberOfAps );
+                        blockedAps = zeros( 1, numberOfAps );
                         blockageTrialsCorr = zeros( 1, numberOfAps );
 
 
@@ -128,19 +128,9 @@ for distanceToBody_id = 1:length( distanceToUserBody_vector )
                             % Transmit power per area is constant
                             rxPower = txPower;
 
-                            % Apply path loss
-                            rxPower = rxPower .* PL_LOS( distance3d );
-
-                            % Apply directional antenna gain
-                            illuminated = distance2d < mainLobeEdgeTx;
-                            rxPower = rxPower .* ANT_GAIN( ...
-                                                    illuminated,...
-                                                    sideLobeGainTx,...
-                                                    mainLobeGainTx );
-
                             % Apply body blockage                
                             % APs are blocked independently
-                            blockageTrialsIndy = binornd(...
+                            blockedAps = binornd(...
                                 1,...
                                 P_ApBlocked( distance2d,...
                                              distanceToTopHead,...
@@ -149,14 +139,16 @@ for distanceToBody_id = 1:length( distanceToUserBody_vector )
                                              bodyWide,...
                                              areaSide/2,...
                                              numberOfHumanBlockages ),...
-                                1, length(rxPower) );
+                                1, length(distance2d) );
 
-                            bodyAttenuationIndy = 1 - blockageTrialsIndy + ...
-                                blockageTrialsIndy .* bodyAttenuation_vector(1);
-            %                 bodyAttenuationCorr = 1 - blockageTrialsCorr + ...
-            %                 	blockageTrialsCorr .* bodyAttenuation_vector(1);
-
-                            rxPower = rxPower .* bodyAttenuationIndy;
+                            d2b = (distanceToUserBody ~= 0 ) + 1; %[ 1 = pocket, 2 = hand ]
+                            rxPower = rxPower .* CHANNEL_LOSS( distance3d,...
+                                                            blockedAps,...
+                                                            d2b);
+%                             bodyAttenuationIndy = 1 - blockageTrials + ...
+%                                 blockageTrials .* bodyAttenuation_vector(1);
+% 
+%                             rxPower = rxPower .* bodyAttenuationIndy;
 
                             % Apply small-scale fading
                             % Check if body orientation leads to body reflection
@@ -170,8 +162,18 @@ for distanceToBody_id = 1:length( distanceToUserBody_vector )
                             % Nakagami m parameter varies linearly with the
                             % body orientation angle
                             % random orientation angles
-                            angles = pi .* rand(1,length(rxPower));
-                            rxPower = rxPower .* FADING_BODY_GAIN_3( angles );
+%                             angles = pi .* rand(1,length(rxPower));
+%                             rxPower = rxPower .* FADING_BODY_GAIN_3( angles );
+
+                            % Apply path loss
+%                             rxPower = rxPower .* PL_LOS( distance3d );
+
+                            % Apply directional antenna gain
+                            illuminated = distance2d < mainLobeEdgeTx;
+                            rxPower = rxPower .* ANT_GAIN( ...
+                                                    illuminated,...
+                                                    sideLobeGainTx,...
+                                                    mainLobeGainTx );
 
                             % CELL ASSOCIATION
                             % Get the highest rx power
