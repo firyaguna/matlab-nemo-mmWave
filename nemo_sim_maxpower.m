@@ -141,10 +141,6 @@ for distanceToBody_id = 1:length( distanceToUserBody_vector )
                             % DOWNLINK RECEIVE POWER
                             rxPower = rxPower .* PL_LOS( distance3d );
 
-%                             % CELL ASSOCIATION
-%                             % Get the highest omnidirectional rx power
-%                             [ max_rxPower, servingAP_id ] = max( rxPower );
-
                             % SELF-BODY AND OTHER BODIES BLOCKAGE
                             % Check if top head of bodies may be blocking APs
                             checkMinDistance = ...
