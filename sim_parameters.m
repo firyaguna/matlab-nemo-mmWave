@@ -1,17 +1,17 @@
 % PARAMETERS OF THE SYSTEM
 
 % TOPOLOGY
-areaSide = 400; % meters
-interSiteDistance_vector = 10.^((3:1:23)/10); % meters
-numberOfIterations = 200;
+areaSide = 80; % meters
+interSiteDistance_vector = 20; %10.^((3:1:23)/10); % meters
+numberOfIterations = 10000;
 apHeight_vector = 10; % height above UE plane (meters)
-ppm2 = [.0001 .5]; % people per square meter
+ppm2 = [.8]; % people per square meter
 numberOfRandomBodies_vector = ceil(ppm2.*(areaSide^2)); %6*10.^(0:1:5); %[ 1 20 50 100 200 500 1000] - 1 ;
 
 % USER BODY PARAMETERS
 bodyAttenuation_vector = db2pow( -40 );
 bodyWide = 0.4; % meters
-distanceToUserBody_vector = [ 0 .3 ]; %[ 0 .05 .15 .3 inf ]; % meters
+distanceToUserBody_vector = [ .3 ]; %[ 0 .05 .15 .3 inf ]; % meters
 distanceToTopHead = 0.4; % meters
 
 % POWER
@@ -35,7 +35,7 @@ mainLobeGainRx = MainLobeGain( beamWidthRx, sideLobeGainRx );
 
 % CHANNEL LOSS
 m_K = @(k) (k+1)^2/(2*k+1);
-channel.model = 'yoo2017fading_hallway';
+channel.model = 'nofading';
 switch( channel.model )
     case 'yoo2017measurements_office'
         % PATH LOSS

@@ -71,7 +71,8 @@ for distanceToBody_id = 1:length( distanceToUserBody_vector )
                         blockedAps = zeros( 1, numberOfAps );
                         blockageTrialsCorr = zeros( 1, numberOfAps );
 
-
+                        blockageHist = zeros(2,0);
+                        
                         for n_iter = 1:numberOfIterations
 
                             % PLACE USER EQUIPMENT
@@ -102,6 +103,10 @@ for distanceToBody_id = 1:length( distanceToUserBody_vector )
                                              areaSide/2,...
                                              numberOfHumanBlockages ),...
                                 1, length(distance2d) );
+                            
+                            % Save data to histogram
+                            blockageHist = [ blockageHist(1,:) blockedAps; ... 
+                                             blockageHist(2,:) distance2d ];
                             % Check if body orientation leads to body reflection
                             % Condition: any body fraction should be aligned with both UE and AP
                             isReflecting = binornd(...
@@ -137,8 +142,7 @@ for distanceToBody_id = 1:length( distanceToUserBody_vector )
 
                             % INTERFERENCE
                             interfPower = rxPower;
-                            % turn off idle APs
-            %                             interfPower = interfPower .* onOffApVector;
+
                             % serving AP is not interferer
                             interfPower( servingAP_id ) = 0;
 

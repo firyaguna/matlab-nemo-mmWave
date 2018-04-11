@@ -1,4 +1,4 @@
-function prob = P_randomBlock(d,t,h,w,a)
+function prob = P_RandomBlock(d,t,h,w,a)
 % PROBABILITY OF AN AP BEING BLOCKED BY ANY RANDOM BODY
 %
 % INPUTS:

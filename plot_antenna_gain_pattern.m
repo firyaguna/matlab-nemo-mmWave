@@ -25,6 +25,8 @@ for bw_id = 1:length(beamWidth_vector)
     thetalim([-180,180]);
 end
 
+
+
 bw_1 = 5; bw_2 = 17; bw_3 = 39;
 set( h(bw_1), 'color', colorSpecBw0(bw_1,:), 'Linewidth', 2, 'Linestyle', '-' );
 set( h(bw_2), 'color', colorSpecBw0(bw_2,:), 'Linewidth', 2, 'Linestyle', '-' );
@@ -34,17 +36,27 @@ l=legend([h(bw_1),h(bw_2),h(bw_3)], ...
     beamWidthLegendCell{bw_1}, ...
     beamWidthLegendCell{bw_2}, ...
     beamWidthLegendCell{bw_3}, ...
-    'Location', 'southwest');
+    'Location', 'north');
 set( get(l,'title'),'string','Beamwidth');
 
-set( gca, 'RAxisLocation', 180 );
+set( gca, 'RAxisLocation', 30 );
 set( gca, 'RMinorTick', 'on' );
 set( gca, 'RMinorGrid', 'on' );
+set( gca,  'ThetaZeroLocation', 'bottom');
 
 annotation('textbox',...
-    [0.29 0.50 0.22 0.07],...
+    [0.22 0.53 0.35 0.07],...
     'String',{'Antenna Gain (dBi)'},...
     'LineStyle','none',...
     'FitBoxToText','off');
 
 set(findall(gcf,'-property','FontSize'),'FontSize',12);
+
+clear fig;
+fig=gcf;
+fig.Units = 'inches';
+pos = fig.Position;
+fig.PaperPositionMode = 'Auto'; 
+fig.PaperUnits = 'inches'; 
+fig.PaperSize = [pos(3),pos(4)];
+print(fig,'antenna_pattern','-dpdf','-r0');

@@ -8,12 +8,18 @@ inv_phi = @(p,w) w./(2.*tan(p/2));
 % AP BLOCKED BY SELF-BODY PROBABILITY
 P_SelfBlock = @(d,w) phi(d,w)./(2*pi);
 
-% AP BLOCKED PROBABILITY
+%% AP BLOCKED PROBABILITY
 P_ApBlocked = @(d,t,h,dtb,w,a,Nb) ...
     1 - (1-P_RandomBlock(d,t,h,w,a)).^Nb + ...
             (1-P_RandomBlock(d,t,h,w,a)).^Nb .* ...
             P_SelfBlock(dtb,w) .* ...
             (1 - heaviside(dtb-d.*t./h));
+        
+%% AP BLOCKED PROBABILITY 2
+P_ApBlocked = @(d,t,h,dtb,w,a,Nb) ...
+    1 - (1-P_RandomBlock(d,t,h,w,a)).^Nb + ...
+            (1-P_RandomBlock(d,t,h,w,a)).^Nb .* ...
+            P_RandomSelfBlock(d,t,h,w,a,dtb);
 
 %% ANTENNA GAIN MODEL
 Antenna_Gain = @(illuminated,m,M) illuminated.*M + (1-illuminated).*m;
@@ -34,6 +40,7 @@ channel.SHADOWING_FADING_POWER_GAIN = @(los,d2b,size) ...
     random( channel.SHADOWING_FADING{los,d2b}, size ).^2;
 end
 
+if ~strcmp(channel.model,'nofading')
 % SMALL-SCALE FADING MODEL - signal envelope
 channel.SMALL_FADING = cell(2);
 for i=1:2 % [LOS;NLOS]
@@ -43,6 +50,7 @@ for i=1:2 % [LOS;NLOS]
 end
 channel.SMALL_FADING_POWER_GAIN = @(los,d2b,size) ...
     random( channel.SMALL_FADING{los,d2b}, size ).^2;
+end
 
 if strcmp(channel.model,'userOrientedFading_2')
 % FADING GAIN DUMMY MODEL
