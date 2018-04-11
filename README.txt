@@ -48,6 +48,19 @@ HOW TO USE THE SIMULATOR
 	This script will plot the desired result after processing the SINR struct
 	according to the metric.
 
+
+---------------------------------------------------------------------------------
+PUBLICATION
+
+System modeling and some results using this code are presented in this paper:
+
+https://ieeexplore.ieee.org/abstract/document/8254623/
+Coverage and Spectral Efficiency of Indoor mmWave Networks 
+with Ceiling-Mounted Access Points
+
+Abstract:
+Provisioning of high throughput millimetre-wave signal to indoor areas that potentially serve a large number of users, such as transportation hubs or convention centres, will require dedicated indoor millimetre-wave access point deployments. In this article, we study dense deployments of millimetre-wave access points mounted on the ceiling, and illuminating selected spots on the ground with the use of fixed directional antennas. In this setup, the main factor limiting signal propagation are blockages by human bodies. We evaluate our system under a number of scenarios that take into account beamwidth of the main-lobe, access point density, and positioning of the mobile device with respect to the user's body. We find that both coverage and area spectral efficiency curves exhibit non-trivial behaviour which can be classified into four regions related to the selection of access point density, beamwidth, and height values. Furthermore, we observe a trade-off in beamwidth design, as the optimal beamwidth maximizes either coverage or area spectral efficiency, but not both. Finally, when we consider different body shadowing scenarios, our network design optimizes coverage or area spectral efficiency performance towards either devices held in hand or worn directly against the body, as each of the scenarios requires mutually exclusive settings of access point density and beamwidth.
+
 ---------------------------------------------------------------------------------
 SUPPORT
 
