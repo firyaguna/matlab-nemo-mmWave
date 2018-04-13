@@ -79,8 +79,8 @@ function [ sinr ] = sim_Downlink( sim )
     % RECEIVED SINR
     sinr.maxPower = rxPower( servingAP_id_maxPower ) ./ ...
         ( sim.noisePower + sum( interfPower_maxPower ) );
-    sinr.minDist = sum( interfPower_minDist );%rxPower( servingAP_id_minDist ) ./ ...
-%         ( sim.noisePower + sum( interfPower_minDist ) );
+    sinr.minDist = rxPower( servingAP_id_minDist ) ./ ...
+        ( sim.noisePower + sum( interfPower_minDist ) );
     
     % -------------------- WITH FADING ------------------------
     % INTERFERENCE
