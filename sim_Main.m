@@ -75,10 +75,9 @@ for distanceToBody_id = 1:length( distanceToUserBody_vector )
                         for n_iter = 1:numberOfIterations
                             
                             % PLACE USER EQUIPMENT
-%                             uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
+                            uePosition = ( -1+2*rand(1) + -1i+2i*rand(1) );
                             % Place UE in origin and shift cell positions
-%                             apPosition_temp = apPosition - sim.areaSide/2 * uePosition;
-                            apPosition_temp = apPosition - 8;
+                            apPosition_temp = apPosition - sim.areaSide/2 * uePosition;
                             % Get 2-D distance from AP to UE
                             sim.distance2d = abs( apPosition_temp );
                             % Get angle of arrival from AP to UE
