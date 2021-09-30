@@ -2,7 +2,7 @@
 
 % TOPOLOGY
 sim.areaSide = 400; % meters
-interSiteDistance_vector = 10.^((3:10:23)/10); % meters
+interSiteDistance_vector = 10.^((1:23)/10); % meters
 numberOfIterations = 1000;
 apHeight_vector = 10; % height above UE plane (meters)
 ppm2 = [0 .1 .8]; % people per square meter
